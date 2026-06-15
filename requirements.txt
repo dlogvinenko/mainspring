@@ -1,0 +1,12 @@
+# Runtime dependencies for Mainspring Python helpers.
+# Install with:
+#   python3 -m pip install -r requirements.txt
+
+rich>=13.7,<15
+
+# Optional provider/local-model engines. Patched LiteLLM releases currently
+# support Python <3.14; on Python 3.14 these markers skip instead of resolving
+# to vulnerable older transitive dependencies.
+litellm>=1.83.11,<2; python_version < "3.14"
+aiohttp>=3.14.0; python_version < "3.14"
+python-dotenv>=1.2.2; python_version < "3.14"

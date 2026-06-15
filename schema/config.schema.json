@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Mainspring local config",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "MODE": {
+      "type": "string",
+      "enum": ["taskmaster", "night"]
+    },
+    "PAIR_MODE": {
+      "type": "string",
+      "description": "writer+reviewer pair, e.g., claude+codex"
+    },
+    "ENGINE": {
+      "type": "string"
+    },
+    "MODEL_OVERRIDE": {
+      "type": "string"
+    },
+    "REVIEW_ENGINE": {
+      "type": "string"
+    },
+    "REVIEW_MODEL_OVERRIDE": {
+      "type": "string"
+    },
+    "CODEX_REASONING_EFFORT": {
+      "type": "string"
+    },
+    "SPEED_PROFILE": {
+      "type": "string",
+      "enum": ["standard", "fast", "max"]
+    },
+    "MAX_AGENTS": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 6
+    },
+    "AUTO_RETRY_CI": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "AUTO_RETRY_CI_LOG": {
+      "type": "string",
+      "description": "Optional readable local CI log whose tail is injected into auto-retry CI prompts"
+    },
+    "AGENT_MODE": {
+      "type": "string",
+      "enum": ["architect", "code", "debug", "ask"],
+      "description": "Writer role mode used to shape the wave prompt and review lens"
+    },
+    "TOPOLOGY": {
+      "type": "string",
+      "enum": ["team", "solo"]
+    },
+    "RUN_ONCE": {
+      "type": "boolean"
+    },
+    "PRD_PATH": {
+      "type": "string"
+    },
+    "AUTO_CHECKPOINT": {
+      "type": "boolean"
+    }
+  }
+}

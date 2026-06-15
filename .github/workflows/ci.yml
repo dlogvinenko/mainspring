@@ -1,0 +1,52 @@
+# SPDX-License-Identifier: Apache-2.0
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  make-all:
+    name: make all (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Install system test tools on Linux
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bats shellcheck
+
+      - name: Install system test tools on macOS
+        if: runner.os == 'macOS'
+        run: |
+          brew update
+          brew install bats-core shellcheck
+
+      - name: Install Python test tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+
+      - name: Run local CI gate
+        run: make all

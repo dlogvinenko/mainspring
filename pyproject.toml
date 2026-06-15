@@ -1,0 +1,193 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mainspring"
+version = "1.0.0"
+description = "Product Requirements Document (PRD)-first AI coding agent orchestration for production-grade software delivery."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+keywords = [
+  "ai-coding-agent",
+  "coding-agent",
+  "agent-orchestration",
+  "autonomous-coding",
+  "developer-tools",
+  "llm-agents",
+  "prd",
+  "prd-first",
+  "product-requirements-document",
+  "ai-code-review",
+  "local-ai-agents",
+  "taskmaster",
+  "codex",
+  "claude",
+  "ollama",
+  "litellm",
+]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "Operating System :: MacOS",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Software Development",
+  "Topic :: Software Development :: Quality Assurance",
+]
+dependencies = [
+  "rich>=13.7,<15",
+]
+
+[project.urls]
+Homepage = "https://github.com/dlogvinenko/mainspring"
+Source = "https://github.com/dlogvinenko/mainspring"
+Documentation = "https://github.com/dlogvinenko/mainspring/blob/main/docs/guide.md"
+Changelog = "https://github.com/dlogvinenko/mainspring/blob/main/CHANGELOG.md"
+Issues = "https://github.com/dlogvinenko/mainspring/issues"
+
+[project.optional-dependencies]
+providers = [
+  "litellm>=1.83.11,<2; python_version < '3.14'",
+  "aiohttp>=3.14.0; python_version < '3.14'",
+  "python-dotenv>=1.2.2; python_version < '3.14'",
+]
+dev = [
+  "build>=1.2,<2",
+  "pytest>=8,<10",
+  "ruff>=0.13,<1",
+  "pip-audit>=2.9,<3",
+]
+
+[project.scripts]
+mainspring = "mainspring_bootstrap:main"
+
+[tool.setuptools]
+package-dir = {"" = "py"}
+py-modules = ["cli_runtime", "mainspring_bootstrap"]
+
+[tool.setuptools.data-files]
+"share/mainspring" = [
+  "mainspring.sh",
+  "requirements.txt",
+]
+"share/mainspring/lib" = [
+  "lib/common.sh",
+  "lib/cli.sh",
+  "lib/dispatch.sh",
+  "lib/doctor.sh",
+  "lib/dry_run.sh",
+  "lib/engines.sh",
+  "lib/help.sh",
+  "lib/lock.sh",
+  "lib/log.sh",
+  "lib/notify.sh",
+  "lib/prompts.sh",
+  "lib/review.sh",
+  "lib/self_test.sh",
+  "lib/status.sh",
+  "lib/taskmaster_helpers.sh",
+  "lib/team.sh",
+  "lib/usage.sh",
+  "lib/wave.sh",
+  "lib/wave_loop.sh",
+  "lib/wave_loop_setup.sh",
+  "lib/wave_loop_state.sh",
+  "lib/work_mode_help.sh",
+  "lib/write_scope.sh",
+  "lib/wizard.sh",
+]
+"share/mainspring/py" = [
+  "py/backlog_source.py",
+  "py/cli_runtime.py",
+  "py/decompose.py",
+  "py/detach_exec.py",
+  "py/engine_quota.py",
+  "py/engine_registry.py",
+  "py/fd_lock.py",
+  "py/failure_taxonomy.py",
+  "py/fnm_env.py",
+  "py/hud.py",
+  "py/last_run.py",
+  "py/limits.py",
+  "py/litellm_runner.py",
+  "py/method_init.py",
+  "py/metrics.py",
+  "py/notify_telegram.py",
+  "py/runtime_state.py",
+  "py/team_status.py",
+  "py/parse_review.py",
+  "py/prd_brief.py",
+  "py/prd_validate.py",
+  "py/replay.py",
+  "py/stream_json_prettify.py",
+  "py/taskmaster.py",
+  "py/team_dispatch.py",
+  "py/wave_log.py",
+]
+"share/mainspring/py/engines" = [
+  "py/engines/__init__.py",
+  "py/engines/_base.py",
+  "py/engines/anthropic.py",
+  "py/engines/azure.py",
+  "py/engines/claude.py",
+  "py/engines/codex.py",
+  "py/engines/gemini.py",
+  "py/engines/grok.py",
+  "py/engines/litellm_adapter.py",
+  "py/engines/mistral.py",
+  "py/engines/ollama.py",
+  "py/engines/openai.py",
+  "py/engines/openrouter.py",
+  "py/engines/registry.py",
+]
+"share/mainspring/presets" = [
+  "presets/conservative-docs.env",
+  "presets/fast-smoke.env",
+  "presets/nightly-max.env",
+]
+"share/mainspring/schema" = [
+  "schema/config.schema.json",
+]
+"share/mainspring/docs" = [
+  "docs/architecture.md",
+  "docs/competitive-analysis.md",
+  "docs/guide.md",
+  "docs/method.md",
+  "docs/metrics.md",
+  "docs/playbook.md",
+  "docs/prd.md",
+]
+"share/mainspring/docs/assets" = [
+  "docs/assets/hud-demo.cast",
+  "docs/assets/hud-preview.svg",
+  "docs/assets/readme-hero.svg",
+]
+"share/mainspring/method" = [
+  "method/README.md",
+  "method/install.sh",
+]
+"share/mainspring/method/skill" = [
+  "method/skill/SKILL.md",
+]
+"share/mainspring/method/skill/templates" = [
+  "method/skill/templates/adr.md",
+  "method/skill/templates/audit-prompt.md",
+  "method/skill/templates/prd.md",
+  "method/skill/templates/reality-reset-prompt.md",
+  "method/skill/templates/task.md",
+]
+"share/mainspring/method/templates" = [
+  "method/templates/adr.md",
+  "method/templates/audit-prompt.md",
+  "method/templates/prd.md",
+  "method/templates/reality-reset-prompt.md",
+  "method/templates/task.md",
+]

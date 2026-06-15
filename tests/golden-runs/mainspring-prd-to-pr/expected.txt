@@ -1,0 +1,23 @@
+Golden run: mainspring-prd-to-pr
+Waves: 3
+
+1. golden-001-prd-setup PASS pair=claude+codex mode=night/solo lane=docs
+   score: chapter=+10 competitor=+5 launch=+0 product=710
+   task=prd-setup duration=60s files=2
+   - docs/prd.md
+   - docs/method.md
+
+2. golden-002-slice-impl PASS pair=claude+codex mode=night/solo lane=code
+   score: chapter=+20 competitor=+10 launch=+5 product=730
+   task=slice-impl duration=180s files=2
+   - py/replay.py
+   - py/tests/test_replay.py
+
+3. golden-003-replay-evidence PASS pair=claude+codex mode=night/solo lane=verify
+   score: chapter=+20 competitor=+10 launch=+5 product=730
+   task=replay-evidence duration=45s files=1
+   replayed_from=golden-002-slice-impl determinism=PASS
+   - tests/golden-runs/mainspring-prd-to-pr/waves.jsonl
+
+Replay acceptance:
+- golden-003-replay-evidence from golden-002-slice-impl: PASS

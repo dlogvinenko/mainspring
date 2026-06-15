@@ -1,0 +1,45 @@
+Mainspring
+Copyright 2026 Mainspring contributors
+
+This product includes software developed by the Mainspring contributors.
+
+Licensed under the Apache License, Version 2.0 (the "License"); see the
+LICENSE file in the root of this repository or
+<https://www.apache.org/licenses/LICENSE-2.0> for the full license text.
+
+================================================================================
+Third-party runtime dependencies
+================================================================================
+
+The Mainspring runtime depends on the following third-party Python packages,
+each redistributed under its own license. Mainspring does not modify or
+re-license these packages; they are pulled in at install time via pip / pipx.
+
+--------------------------------------------------------------------------------
+rich
+--------------------------------------------------------------------------------
+
+  Source     : https://github.com/Textualize/rich
+  License    : MIT License
+  Copyright  : Copyright (c) 2020 Will McGugan
+  Used for   : terminal rendering in the Mainspring HUD (py/hud.py) and CLI
+               status output.
+
+--------------------------------------------------------------------------------
+litellm
+--------------------------------------------------------------------------------
+
+  Source     : https://github.com/BerriAI/litellm
+  License    : MIT License
+  Copyright  : Copyright (c) 2023 Berri AI
+  Used for   : unified provider routing across the Mainspring engine adapters
+               (py/litellm_runner.py, py/engines/litellm_adapter.py and the
+               anthropic / azure / gemini / grok / mistral / ollama / openai /
+               openrouter wrappers).
+
+================================================================================
+
+This NOTICE file is provided for informational purposes only and does not
+modify the License. You must include a copy of this NOTICE in any
+redistribution of Mainspring, in accordance with section 4(d) of the
+Apache License, Version 2.0.

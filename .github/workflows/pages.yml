@@ -1,0 +1,69 @@
+# SPDX-License-Identifier: Apache-2.0
+name: Docs Site
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "docs/**"
+      - "py/docs_site.py"
+      - ".github/workflows/pages.yml"
+  pull_request:
+    paths:
+      - "docs/**"
+      - "py/docs_site.py"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build Jekyll docs source
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Generate docs-site source
+        run: python3 py/docs_site.py --output build/docs-site-source --clean
+
+      - name: Build with Jekyll
+        uses: actions/jekyll-build-pages@v1
+        with:
+          source: build/docs-site-source
+          destination: build/docs-site
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: build/docs-site
+
+  deploy:
+    name: Deploy GitHub Pages
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.MAINSPRING_ENABLE_PAGES_DEPLOY == '1'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

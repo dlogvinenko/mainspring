@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200" viewBox="0 0 1200 1200" role="img" aria-labelledby="title desc">
+  <title id="title">Mainspring HUD preview</title>
+  <desc id="desc">A terminal-style Mainspring HUD preview showing running, blocked, and stopped project rows with folder, tag, task, progress, Telegram state, and next action.</desc>
+  <defs>
+    <style>
+      text { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+      .bg { fill: #111827; }
+      .panel { fill: #1f2433; stroke: #7aa2ff; stroke-width: 2; }
+      .rule { stroke: #8b94ad; stroke-width: 1.5; }
+      .title { fill: #e5e7eb; font-size: 27px; font-weight: 800; }
+      .meta { fill: #c7d2fe; font-size: 21px; font-weight: 700; }
+      .muted { fill: #9ca3af; font-size: 18px; font-weight: 650; }
+      .head { fill: #93c5fd; font-size: 19px; font-weight: 800; }
+      .cell { fill: #d1d5db; font-size: 19px; font-weight: 650; }
+      .running { fill: #bef264; font-size: 19px; font-weight: 800; }
+      .needs-action { fill: #fb7185; font-size: 19px; font-weight: 800; }
+      .stopped { fill: #fbbf24; font-size: 19px; font-weight: 800; }
+      .ok { fill: #86efac; font-size: 19px; font-weight: 800; }
+      .warn { fill: #fda4af; font-size: 19px; font-weight: 800; }
+      .cmd { fill: #a7f3d0; font-size: 18px; font-weight: 750; }
+    </style>
+  </defs>
+
+  <rect class="bg" width="1200" height="1200" rx="8"/>
+  <rect class="panel" x="24" y="24" width="1152" height="520" rx="8"/>
+
+  <text class="title" x="50" y="70">Mainspring</text>
+  <text class="meta" x="50" y="108">2 live / 1 needs action / 1 past</text>
+  <text class="muted" x="50" y="140">All projects on this machine. Live first. Newest activity first.</text>
+
+  <text class="head" x="50" y="194">State</text>
+  <text class="head" x="175" y="194">Project</text>
+  <text class="head" x="360" y="194">Folder</text>
+  <text class="head" x="570" y="194">Tag</text>
+  <text class="head" x="680" y="194">Task</text>
+  <text class="head" x="755" y="194">Pair</text>
+  <text class="head" x="925" y="194">Progress</text>
+  <text class="head" x="1050" y="194">Next</text>
+  <line class="rule" x1="50" y1="214" x2="1150" y2="214"/>
+
+  <text class="running" x="50" y="254">Running</text>
+  <text class="cell" x="175" y="254">checkout</text>
+  <text class="cell" x="360" y="254">~/work/checkout</text>
+  <text class="cell" x="570" y="254">release</text>
+  <text class="cell" x="680" y="254">7</text>
+  <text class="cell" x="755" y="254">codex+claude</text>
+  <text class="ok" x="925" y="254">75%</text>
+  <text class="cell" x="1050" y="254">Watch</text>
+
+  <text class="needs-action" x="50" y="304">Blocked</text>
+  <text class="cell" x="175" y="304">docs-site</text>
+  <text class="cell" x="360" y="304">~/work/docs</text>
+  <text class="cell" x="570" y="304">docs</text>
+  <text class="cell" x="680" y="304">12</text>
+  <text class="cell" x="755" y="304">codex+codex</text>
+  <text class="warn" x="925" y="304">blocked</text>
+  <text class="cell" x="1050" y="304">Inspect</text>
+
+  <text class="stopped" x="50" y="354">Stopped</text>
+  <text class="cell" x="175" y="354">mobile</text>
+  <text class="cell" x="360" y="354">~/work/mobile</text>
+  <text class="cell" x="570" y="354">main</text>
+  <text class="cell" x="680" y="354">-</text>
+  <text class="cell" x="755" y="354">-</text>
+  <text class="cell" x="925" y="354">100%</text>
+  <text class="cell" x="1050" y="354">Clean</text>
+
+  <line class="rule" x1="50" y1="390" x2="1150" y2="390"/>
+  <text class="muted" x="50" y="430">Commands</text>
+  <text class="cmd" x="160" y="430">mainspring hud</text>
+  <text class="cmd" x="355" y="430">mainspring status</text>
+  <text class="cmd" x="590" y="430">mainspring last-run</text>
+  <text class="cmd" x="840" y="430">mainspring stop --force</text>
+  <text class="muted" x="50" y="458">Telegram/log rows include Project, Folder, Tag, Task, Pair, Result,</text>
+  <text class="muted" x="50" y="484">Reason, Next, and Duration, so parallel runs stay readable.</text>
+
+  <rect class="panel" x="24" y="610" width="1152" height="500" rx="8"/>
+  <text class="title" x="50" y="670">Readable Empty State</text>
+  <text class="muted" x="50" y="710">When nothing is running, the HUD explains what that means and what to do next.</text>
+
+  <text class="head" x="70" y="780">State</text>
+  <text class="running" x="245" y="780">IDLE - no Mainspring work is running</text>
+  <text class="head" x="70" y="830">Start</text>
+  <text class="cmd" x="245" y="830">cd /path/to/project &amp;&amp; mainspring</text>
+  <text class="head" x="70" y="880">Resume</text>
+  <text class="cmd" x="245" y="880">mainspring --last-run</text>
+  <text class="head" x="70" y="930">Inspect</text>
+  <text class="cmd" x="245" y="930">mainspring status</text>
+  <text class="head" x="70" y="980">Past runs</text>
+  <text class="cmd" x="245" y="980">mainspring hud --all-runtimes</text>
+  <text class="head" x="70" y="1030">Stop project</text>
+  <text class="cmd" x="245" y="1030">mainspring stop --force</text>
+</svg>

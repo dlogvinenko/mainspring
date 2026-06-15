@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200" viewBox="0 0 1200 1200" role="img" aria-labelledby="title desc">
+  <title id="title">Mainspring Product Requirements Document to evidence flow</title>
+  <desc id="desc">Mainspring turns a Product Requirements Document into reviewed, auditable autonomous coding waves with HUD and Telegram visibility.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#111827"/>
+      <stop offset="0.48" stop-color="#132f35"/>
+      <stop offset="1" stop-color="#1f1b16"/>
+    </linearGradient>
+    <linearGradient id="rail" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#38bdf8"/>
+      <stop offset="0.42" stop-color="#2dd4bf"/>
+      <stop offset="0.72" stop-color="#84cc16"/>
+      <stop offset="1" stop-color="#f59e0b"/>
+    </linearGradient>
+    <filter id="soft-shadow" x="-12%" y="-18%" width="124%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="16" flood-color="#020617" flood-opacity="0.34"/>
+    </filter>
+    <style>
+      text { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      .brand { fill: #f8fafc; font-size: 64px; font-weight: 850; }
+      .title { fill: #f8fafc; font-size: 42px; font-weight: 850; }
+      .subtitle { fill: #dbeafe; font-size: 24px; font-weight: 650; }
+      .card-title { fill: #f8fafc; font-size: 27px; font-weight: 850; }
+      .card-text { fill: #cbd5e1; font-size: 19px; font-weight: 650; }
+      .chip { fill: #d1fae5; font-size: 16px; font-weight: 850; letter-spacing: 0; }
+      .metric { fill: #e5e7eb; font-size: 18px; font-weight: 700; }
+      .muted { fill: #94a3b8; font-size: 15px; font-weight: 600; }
+      .panel { fill: rgba(15, 23, 42, 0.78); stroke: rgba(226, 232, 240, 0.2); stroke-width: 1.5; }
+      .node { fill: #0f172a; stroke: rgba(226, 232, 240, 0.28); stroke-width: 1.4; }
+      .rail { stroke: url(#rail); stroke-width: 7; stroke-linecap: round; fill: none; }
+      .dot { fill: #f8fafc; stroke: #2dd4bf; stroke-width: 5; }
+    </style>
+  </defs>
+
+  <rect width="1200" height="1200" rx="8" fill="url(#bg)"/>
+  <rect x="42" y="42" width="1116" height="1116" rx="8" fill="none" stroke="rgba(226,232,240,0.18)" stroke-width="1.5"/>
+
+  <text x="76" y="116" class="brand">Mainspring</text>
+  <text x="76" y="174" class="title">Product requirements first</text>
+  <text x="76" y="222" class="subtitle">Requirements-driven agent work</text>
+
+  <path class="rail" d="M218 370 C342 306 426 306 550 370 S758 434 882 370"/>
+  <circle class="dot" cx="218" cy="370" r="15"/>
+  <circle class="dot" cx="550" cy="370" r="15"/>
+  <circle class="dot" cx="882" cy="370" r="15"/>
+
+  <g filter="url(#soft-shadow)">
+    <rect class="node" x="76" y="282" width="284" height="176" rx="8"/>
+    <text x="106" y="328" class="chip">01</text>
+    <text x="106" y="366" class="card-title">Product intent</text>
+    <text x="106" y="406" class="card-text">Requirements + gates</text>
+  </g>
+
+  <g filter="url(#soft-shadow)">
+    <rect class="node" x="458" y="282" width="284" height="176" rx="8"/>
+    <text x="488" y="328" class="chip">02</text>
+    <text x="488" y="366" class="card-title">Reviewed wave</text>
+    <text x="488" y="406" class="card-text">Writer + reviewer gate</text>
+  </g>
+
+  <g filter="url(#soft-shadow)">
+    <rect class="node" x="840" y="282" width="284" height="176" rx="8"/>
+    <text x="870" y="328" class="chip">03</text>
+    <text x="870" y="366" class="card-title">Operator evidence</text>
+    <text x="870" y="406" class="card-text">Ledger, HUD, Telegram</text>
+  </g>
+
+  <rect class="panel" x="76" y="492" width="1048" height="72" rx="8"/>
+  <text x="106" y="523" class="metric">Confidence: tested, reviewed, auditable</text>
+  <text x="106" y="550" class="muted">Shell lint • Python tests • Bats • package smoke • HUD smoke</text>
+  <text x="840" y="523" class="metric">Operator-ready</text>
+  <text x="840" y="550" class="muted">HUD • alerts • replay</text>
+
+  <text x="76" y="656" class="subtitle">Why it survives production work</text>
+  <g filter="url(#soft-shadow)">
+    <rect class="node" x="76" y="700" width="316" height="150" rx="8"/>
+    <text x="106" y="746" class="card-title">Clear target</text>
+    <text x="106" y="786" class="card-text">Requirements define success</text>
+  </g>
+  <g filter="url(#soft-shadow)">
+    <rect class="node" x="442" y="700" width="316" height="150" rx="8"/>
+    <text x="472" y="746" class="card-title">Separate review</text>
+    <text x="472" y="786" class="card-text">Writer does not self-grade</text>
+  </g>
+  <g filter="url(#soft-shadow)">
+    <rect class="node" x="808" y="700" width="316" height="150" rx="8"/>
+    <text x="838" y="746" class="card-title">Visible runs</text>
+    <text x="838" y="786" class="card-text">HUD + Telegram context</text>
+  </g>
+
+  <rect class="panel" x="76" y="910" width="1048" height="170" rx="8"/>
+  <text x="106" y="960" class="metric">Start from any project folder</text>
+  <text x="106" y="1004" class="card-text">cd /path/to/project</text>
+  <text x="106" y="1046" class="card-title">mainspring</text>
+  <text x="620" y="960" class="metric">Operator commands stay simple</text>
+  <text x="620" y="1004" class="card-text">install, run, watch, stop, replay</text>
+  <text x="620" y="1046" class="card-text">Every run leaves an audit trail.</text>
+</svg>

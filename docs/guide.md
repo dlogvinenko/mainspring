@@ -1,0 +1,530 @@
+# Mainspring Guide
+
+`mainspring` is an autonomous execution driver. It turns a Product
+Requirements Document (PRD) or Taskmaster backlog into reviewed, auditable
+writer/reviewer waves.
+
+The normal first command is just:
+
+```bash
+cd /path/to/your-project
+mainspring
+```
+
+That opens the guided start flow in an interactive terminal. If stdin is not
+interactive and no answers are piped in, Mainspring exits with setup guidance
+instead of starting from incomplete setup. Use `doctor`
+only when you want a dependency and environment diagnostic.
+
+## Install Once, Run Anywhere
+
+v1 installs use the GitHub repo plus the `mainspring` console command:
+
+```bash
+python3 -m pip install --user pipx
+python3 -m pipx ensurepath  # Homebrew: brew install pipx && pipx ensurepath
+git clone https://github.com/dlogvinenko/mainspring.git
+cd mainspring
+make install-user
+cd /path/to/your-project
+mainspring
+```
+
+Check the command:
+
+```bash
+command -v mainspring
+mainspring --version
+mainspring --help
+```
+
+If `command -v mainspring` prints nothing, make sure the pipx app directory
+`~/.local/bin` is on the shell PATH, then reopen the terminal.
+
+Source checkouts should refresh the global editable command after local changes:
+
+```bash
+cd /path/to/mainspring
+make install-user
+cd /path/to/your-project
+mainspring
+```
+
+That target runs `pipx ensurepath`, removes any old `mainspring` pipx
+environment, and installs the current checkout. The reinstall step prevents
+stale optional provider dependencies from lingering after an update. If you do
+not want a pipx command, run the checkout script against any project explicitly:
+
+```bash
+./mainspring.sh --project /path/to/your-project status
+```
+
+Provider/local-model engines use optional LiteLLM dependencies. Install them
+into the global command with Python 3.11-3.13, then check engine readiness:
+
+```bash
+cd /path/to/mainspring
+MAINSPRING_PROVIDERS_PYTHON=python3.13 make install-user-providers
+mainspring engines
+```
+
+## Everyday Commands
+
+These are the commands most operators need day to day.
+
+| Need | Run | Notes |
+| --- | --- | --- |
+| Start or continue work | `mainspring` | Guided setup, saved-run resume, or normal project launch from the current directory. |
+| Watch all runs | `mainspring hud` | Live global dashboard for every Mainspring run on the machine. |
+| Check this project | `mainspring status` | Read-only runtime/git/Taskmaster state without starting work. |
+| Diagnose setup | `mainspring doctor` | Dependency, path, lock, notifier, and team-backend checks when something looks wrong. |
+| Inspect saved setup | `mainspring last-run` | Show the last saved mode, topology, pair, models, and repeat commands. |
+| Resume saved setup | `mainspring --last-run` | Launch the last saved setup for this project. |
+| Preview safely | `mainspring --preset fast-smoke --dry-run` | Resolve commands and dependencies with zero API calls. |
+| Run one Taskmaster item | `mainspring taskmaster --once` | One bounded writer/reviewer wave from the backlog. |
+| Run one PRD slice | `mainspring night --prd docs/prd.md --once` | One Product Requirements Document (PRD)-driven wave. |
+| Stop this project | `mainspring stop --force` | Stop the current project's recorded run. Run `mainspring stop --help` before emergency all-project cleanup. |
+| Test Telegram | `mainspring notify-test` | Send one configured test notification. |
+| Check notifier | `mainspring notify-health` | Read notifier health without calling Telegram. |
+
+## Command Reference
+
+These are supported public commands. The short help shows the daily path; this
+table names the rest so humans and agents do not need to read shell code.
+
+Every row below is a complete runnable command. Flags are shown only inside
+copy/paste examples, never as separate columns.
+
+| Need | Run | What it does |
+| --- | --- | --- |
+| Full help | `mainspring help --full` | Print the complete CLI contract. |
+| Version | `mainspring --version` | Print the installed version. |
+| Live HUD | `mainspring hud` | Watch live runs across the machine. |
+| HUD snapshot | `mainspring hud --once` | Print one frame and exit. |
+| HUD JSON | `mainspring hud --json --once` | Emit a machine-readable snapshot with run counts and `runs[]`. |
+| Include old runs | `mainspring hud --all-runtimes` | Include stale recorded runs. |
+| Current-project HUD | `mainspring hud --local` | Scope the dashboard to this checkout. |
+| This project status | `mainspring status` | Read status for the current checkout. |
+| Another project status | `mainspring --project /path/to/project status` | Read status for another checkout. |
+| Inspect saved setup | `mainspring last-run` | Show saved launch settings. |
+| Saved setup JSON | `mainspring last-run --format json` | Show saved launch settings as JSON. |
+| Resume saved setup | `mainspring --last-run` | Run the saved setup again. |
+| Safe preview | `mainspring --dry-run` | Resolve default settings before a real wave. |
+| Preset preview | `mainspring --preset fast-smoke --dry-run` | Preview the fastest smoke preset with zero API calls. |
+| List presets | `mainspring --list-presets` | Show built-in run presets. |
+| Preview a pair | `mainspring --dry-run --pair codex+claude` | Preview writer/reviewer command construction. |
+| Preview local writer | `mainspring --dry-run --engine ollama --model 'ollama/qwen3:8b'` | Check a local-model writer route before spending reviewer quota. |
+| One Taskmaster wave | `mainspring taskmaster --once` | Run one bounded writer/reviewer wave. |
+| Taskmaster with pair | `mainspring taskmaster --once --pair codex+claude` | Run one bounded wave with an explicit pair. |
+| One PRD wave | `mainspring night --prd docs/prd.md --once` | Run one Product Requirements Document (PRD)-driven wave. |
+| Continuous PRD mode | `mainspring night --prd docs/prd.md` | Keep selecting PRD-driven waves until stopped or blocked. |
+| PRD wave with pair | `mainspring night --prd docs/prd.md --once --pair codex+claude` | Run one PRD-driven wave with an explicit pair. |
+| Engines | `mainspring engines` | Inspect adapters, binaries, modules, credentials, and setup gaps. |
+| Engines JSON | `mainspring engines --json` | Inspect adapters as JSON. |
+| Limits | `mainspring limits` | Check run readiness, quota signal, and spend before long runs. |
+| Limits JSON | `mainspring limits --format json` | Read run readiness, quota, and spend as JSON. |
+| Selected limits | `mainspring limits codex claude` | Check selected engines only. |
+| Custom limits window | `mainspring limits --hours 72` | Check spend over a custom window. |
+| Metrics | `mainspring --metrics` | Read pass rate, duration, cost, and stuck-task signals. |
+| Routing metrics | `mainspring --metrics --days 7 --routing` | Read routing metrics for the last week. |
+| Metrics JSON | `mainspring --metrics --format json` | Emit metrics as JSON. |
+
+## Project Planning Commands
+
+These commands shape the backlog before autonomous work starts.
+
+| Need | Command | What it does |
+| --- | --- | --- |
+| Initialize Method docs | `mainspring init checkout-redesign` | Create starter PRD docs under `docs/checkout-redesign/`. |
+| Force Method docs overwrite | `mainspring init checkout-redesign --force` | Overwrite starter docs intentionally. |
+| Validate a PRD | `mainspring validate-prd docs/prd.md` | Validate the Product Requirements Document before decomposition. |
+| Validate a PRD as JSON | `mainspring validate-prd docs/prd.md --format json` | Emit validation details for scripts and agents. |
+| Preview PRD decomposition | `mainspring decompose docs/prd.md --phase P1` | Preview one phase without writing Taskmaster tasks. |
+| Apply PRD decomposition | `mainspring decompose docs/prd.md --phase P1 --apply` | Write validated Taskmaster tasks for one phase. |
+| Pick next task | `mainspring next` | Requires a Taskmaster backlog; prints the next ready item. |
+| Pick next task from a file | `mainspring next path/to/tasks.json` | Inspect a specific Taskmaster backlog. |
+| Audit task shape | `mainspring scope-check` | Requires a Taskmaster backlog; checks the default backlog for Method issues. |
+| Audit task file | `mainspring scope-check path/to/tasks.json` | Check a specific Taskmaster backlog. |
+
+When no backlog exists, Mainspring does not guess: missing backlog prints
+`mainspring init checkout-redesign` guidance so the operator can start from a
+Product Requirements Document (PRD) with a concrete copy/paste example.
+
+## Advanced and Recovery Commands
+
+These are useful, but they are not the default start path.
+
+| Need | Command | What it does |
+| --- | --- | --- |
+| Replay evidence | `mainspring replay show last .mainspring/logs/waves.jsonl` | Inspect a recorded wave without trusting memory. |
+| State repair preview | `mainspring --repair-state --dry-run` | Preview stale-state cleanup; does not kill live processes. |
+| State repair apply | `mainspring --repair-state --force` | Apply the reviewed stale-state repair intentionally. |
+| Engine handshake | `mainspring --self-test` | Live writer/reviewer handshake; requires configured engines and may consume provider quota. |
+| Pair matrix handshake | `mainspring --self-test-all` | Live built-in pair checks; requires configured engines and may consume provider quota. |
+
+`mainspring hud` is the global live dashboard in an interactive terminal. Plain
+`mainspring hud` opens the Rich watch view immediately. It prints every live
+Mainspring work process on the machine with folder, PID, Taskmaster tag, task,
+lightweight project progress, wave, started/stopped times, newest activity first,
+Telegram health, quota, and team state. Use `mainspring hud --all-runtimes` to
+include past known runs, `mainspring hud --local` for the current
+project-only HUD, and `mainspring hud --once` for a one-shot snapshot.
+
+HUD `State` is operator health. `Running` means a run is currently working;
+`Waiting` means the loop is alive after a clean wave and waiting for the next
+result; `Blocked` means repeated failures need human action; `Failed` means the
+latest wave failed but has not reached the blocked threshold; `Stopped cleanly`
+means the loop found no work or ended without an active failure; `Not running`
+means Mainspring found a past recorded run but no live process for it. The
+`Reason`, `Fails`, and `Next` columns explain what to inspect or restart.
+
+`Progress` is a lightweight read-only estimate for operator awareness. Mainspring
+counts Taskmaster leaf tasks by active tag first, ignoring cancelled items; if
+Taskmaster files are not present, it falls back to Product Requirements Document
+(PRD) checkboxes. It is an operator signal, not a pass/fail release signal.
+
+HUD JSON is intentionally small and stable for scripts and agents. The top-level
+fields are `scope`, `generated_at`, `run_count`, `live_count`,
+`needs_action_count`, `stale_count`, and `runs`. Each `runs[]` row carries the
+same operator fields shown in the terminal HUD, including project, folder, PID,
+tag, task, wave, pair, result, reason, progress, Telegram health, and next
+action.
+
+## What The Modes Do
+
+- `mainspring` with no flags opens the guided start flow in an interactive
+  terminal. If `.mainspring/state/last-run.env` exists, it shows the saved
+  setup first and offers to continue with it before asking new questions.
+  Non-interactive runs require piped answers or an explicit command:
+  `mainspring last-run` to inspect saved settings if they exist,
+  `mainspring --last-run` to resume saved settings if they exist,
+  `mainspring --dry-run --once` to preview defaults with zero API calls, or
+  `mainspring init checkout-redesign` to scaffold Product Requirements Document
+  (PRD)-backed starter docs after replacing `checkout-redesign` with your
+  feature name.
+- `taskmaster` reads the Taskmaster backlog and picks ready work.
+- `night` reads a PRD brief and lets the writer choose the next useful slice.
+- `--project <path>` tells a source checkout to operate on another project
+  root. The global `mainspring` command from pipx already targets the directory
+  where you run it.
+- `solo` runs one writer and one reviewer loop in the current shell. This is the default and safest first-run path.
+- `team` starts up to six worker panes and dispatches Taskmaster-backed team
+  work items with a per-task routing label. It requires the external team
+  backend and tmux, so use it explicitly with `--topology team` after solo
+  works.
+- `status` prints a read-only report for root git, active tmux/processes,
+  `.mainspring` runtime state, teams, Taskmaster counts, scheduler decision,
+  selected-scope warnings, wave metrics, recommendations, and model defaults.
+- `last-run` shows the saved project setup, timestamp, settings file, and exact repeat/preview commands.
+- `--last-run` reuses `.mainspring/state/last-run.env` without executing it as shell code.
+- `doctor` prints a non-mutating readiness report for commands, git state,
+  locks, logs, dependencies, active team state, and provider-engine setup
+  remediation.
+- `--repair-state --dry-run` previews stale `.mainspring` runtime repairs without changing files.
+- `--dry-run` (standalone) prints resolved settings, writer/reviewer command
+  shapes, dependency checks, and exact remediation for missing provider modules
+  or credentials. Zero API calls. Combine with `--preset` or `--last-run` to
+  preview what a run would do.
+- `--preset <name>` loads a preset env file from `presets/<name>.env`.
+  CLI flags override preset values. Available: `nightly-max`,
+  `conservative-docs`, `fast-smoke`.
+- `--list-presets` prints available presets with descriptions.
+- `--restart-team` intentionally resets active team state before launch.
+  It preserves worker heads under backup refs before removing old worktrees.
+- `notify-test` sends a sample Telegram notification to verify
+  `MAINSPRING_TELEGRAM_BOT_TOKEN` and `MAINSPRING_TELEGRAM_CHAT_ID` are
+  configured. Exits immediately after the test.
+
+Fresh projects use `.mainspring/` for runtime state. Tests and unusual
+automation setups can override runtime paths with `MAINSPRING_RUNTIME_DIR` or
+`MAINSPRING_STATE_DIR`.
+
+## Writer / Reviewer Pairs
+
+- `claude+codex`: Claude writes, Codex reviews.
+- `codex+codex`: Codex writes, Codex reviews.
+- `claude+claude`: Claude writes, Claude reviews.
+- `codex+claude`: Codex writes, Claude reviews.
+
+Default model choices are `gpt-5.5` for Codex and `opus` for Claude unless overridden. Codex reasoning defaults to `xhigh`.
+
+The defaults are centralized through environment variables:
+
+- `MAINSPRING_DEFAULT_CODEX_MODEL` (default `gpt-5.5`)
+- `MAINSPRING_DEFAULT_FAST_CODEX_MODEL` (default `gpt-5.3-codex-spark`)
+- `MAINSPRING_DEFAULT_CLAUDE_MODEL` (default `opus`)
+- `MAINSPRING_CODEX_REASONING_EFFORT` (default `xhigh`)
+
+Use the `MAINSPRING_*` names for new projects. They are the public
+configuration surface for v1.
+
+## Local Model Writer
+
+Mainspring separates the writer from the reviewer. That means a local model can
+do the first implementation pass, while Codex or Claude still performs the
+independent review gate. This is the useful hybrid shape:
+
+- local writer: lower-cost and private, good for draft implementation and docs work
+- cloud reviewer: stronger gate, catches bad local output before the wave passes
+
+Use `--engine` and `--model` for the writer. Use `--review-engine` and
+`--review-model` for the reviewer. Prefer these explicit flags over `--pair`
+when one side uses a custom local model id.
+
+Before the first provider/local-model wave, run `mainspring engines`. It shows
+whether the LiteLLM bridge is installed and which environment variables are
+still missing. If it reports `module=litellm: missing`, run
+`MAINSPRING_PROVIDERS_PYTHON=python3.13 make install-user-providers` from the
+Mainspring source checkout. Missing modules or credentials fail closed before
+any wave.
+
+### Ollama
+
+Use this when the model appears in `ollama list`.
+
+```bash
+ollama list
+mainspring engines
+mainspring night --prd docs/prd.md --topology solo \
+  --engine ollama \
+  --model 'ollama/qwen3:8b' \
+  --review-engine codex \
+  --review-model gpt-5.5 \
+  --dry-run --once
+```
+
+`--dry-run` makes zero model calls. It only proves that Mainspring can resolve
+the writer command, reviewer command, dependencies, runtime paths, and PRD path.
+When the preview says `Status: READY`, remove `--dry-run` to launch the wave.
+
+### MTPLX
+
+Use this when MTPLX owns the local model and can expose an OpenAI-compatible
+server.
+
+Start MTPLX:
+
+```bash
+mtplx quickstart \
+  --model Youssofal/Qwen3.6-27B-MTPLX-Optimized-Speed \
+  --model-id qwen3.6-mtplx \
+  --port 18080
+```
+
+Then run Mainspring from the project in another terminal:
+
+```bash
+OPENAI_API_BASE=http://127.0.0.1:18080/v1 \
+OPENAI_API_KEY=local \
+mainspring night --prd docs/prd.md --topology solo \
+  --engine litellm \
+  --model 'openai/qwen3.6-mtplx' \
+  --review-engine codex \
+  --review-model gpt-5.5 \
+  --dry-run --once
+```
+
+`OPENAI_API_KEY=local` is just a non-empty placeholder for LiteLLM's
+OpenAI-compatible route. MTPLX does not require a real key for localhost by
+default. Change only the model id, port, and reviewer model for your own setup.
+
+Useful verification ladder from the Mainspring source checkout:
+
+```bash
+cd /path/to/mainspring
+mtplx status
+mtplx models
+curl -sS http://127.0.0.1:18080/health
+OPENAI_API_BASE=http://127.0.0.1:18080/v1 OPENAI_API_KEY=local \
+  python3 py/litellm_runner.py \
+  --model 'openai/qwen3.6-mtplx' \
+  --role writer \
+  --prompt 'Reply with exactly OK.'
+```
+
+That low-level runner is a source-checkout diagnostic; the normal operator path
+is still the `mainspring night ... --dry-run --once` command from your project.
+If the runner returns `OK`, the local model path works. If the Mainspring dry-run
+then says `Status: READY`, the writer/reviewer routing works. For multi-wave or
+team runs, start with `--topology solo` first because many local servers are
+tuned for one active request.
+
+## Team Safety Rules
+
+In team mode, Mainspring adds a routing label to each dispatched backlog item so
+setup and supervision messages cannot be mistaken for product tasks. The label
+is generated by Mainspring, not typed by the operator.
+
+- The leader workspace must be clean to start new worktrees. If only
+  `.taskmaster/*` is dirty, the script creates a Taskmaster checkpoint commit
+  before fanout. If only `package-lock.json` is dirty, the script stashes that
+  lockfile drift before fanout and tells you how to find the stash later. If
+  source files are dirty, it falls back to solo instead of blocking forever.
+- Auto-checkpoint uses a denylist for runtime state, logs, build outputs,
+  secrets, local DBs, and screenshots/image dumps. Checkpoint commits
+  use Lore trailers (`Constraint:`, `Rejected:`, `Confidence:`, `Scope-risk:`,
+  `Directive:`, `Tested:`, `Not-tested:`).
+- If a live team already exists, the script resumes supervision instead of launching a duplicate team.
+- Bootstrap tasks are ignored for scheduling. Only Taskmaster-backed dispatch
+  subjects count as product work.
+- Pending assigned tasks are nudged if workers do not claim them after a short delay.
+- Claimed work is requeued only with strong stale evidence: dead heartbeat, or expired lease plus stale idle status and stale heartbeat.
+- If team state cannot be read, the supervisor retries instead of treating the read failure as zero work.
+- If tmux cannot allocate panes for the requested worker count, the launcher automatically retries with fewer workers.
+- Team dispatch skips duplicate Taskmaster-backed subjects already present in
+  the active team ledger. Worker prompts include Taskmaster id, expected file
+  scope, verification requirement, and the no-parent-closure rule.
+- `MAINSPRING_TEAM_EXCLUDE_PREFIXES` is a colon/comma-separated list of path
+  prefixes that team fanout should skip, which is useful for nested git repos
+  or scopes that worker worktrees cannot see.
+- `.claude/` helper worktrees are excluded by default; configured prefixes are
+  additive.
+
+## Wave Ledger
+
+Every completed solo wave and team preflight/dispatch appends JSONL to `.mainspring/logs/waves.jsonl`.
+
+Stable fields:
+
+- `timestamp`
+- `wave_id`
+- `mode`
+- `topology`
+- `team`
+- `task_id`
+- `selected_lane`
+- `engines`
+- `models`
+- `duration_seconds`
+- `changed_files`
+- `tests`
+- `verdict`
+- `exit_code`
+- `failure_reason`
+- `retry_count`
+- `blocked_reason`
+- `next_action`
+
+`--status` reads this ledger, ignores malformed lines, prints the last valid wave, and derives routing hints from recent failures.
+
+## Logs
+
+Logs are written under `.mainspring/logs/`.
+
+- `.mainspring/logs/latest.log`: most recent run log.
+- `.mainspring/logs/latest-taskmaster.log`: most recent Taskmaster run log.
+- `.mainspring/logs/latest-summary.log`: latest summary output.
+- `.mainspring/logs/latest-taskmaster-summary.log`: latest Taskmaster summary output.
+
+## Recovery Commands
+
+Start with read-only inspection. Do not resume saved work or launch a new wave
+until the current state is understood.
+
+| Need | Run | Effect |
+| --- | --- | --- |
+| Global live view | `mainspring hud` | Read-only live dashboard for every discovered run. |
+| Include old runs | `mainspring hud --all-runtimes` | Read-only history plus live rows. |
+| Current project only | `mainspring hud --local` | Read-only dashboard scoped to the current project. |
+| Project status | `mainspring status` | Read-only runtime, git, Taskmaster, and next-action status. |
+| Environment check | `mainspring doctor` | Read-only dependency, lock, notifier, and engine diagnostics. |
+| Saved setup | `mainspring last-run` | Read-only saved launch settings. |
+| Repair preview | `mainspring --repair-state --dry-run` | Read-only stale-state repair plan. |
+| Stop this project | `mainspring stop --force` | Terminates recorded current-project Mainspring processes. |
+| Repair stale state | `mainspring --repair-state --force` | Applies only the reviewed repair preview. |
+
+Use `mainspring stop --help`, `mainspring --repair-state --dry-run`, and
+`mainspring last-run` before any forceful recovery. `mainspring --last-run` and
+`mainspring taskmaster ...` launch work; use them only after the recovery check
+shows the project is safe to resume.
+
+## No-Side-Effect Smoke Checklist
+
+```bash
+tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT
+git status --short --untracked-files=all > "$tmp/status-before.txt"
+shasum .taskmaster/tasks/tasks.json .mainspring/state/skill-active-state.json 2>/dev/null > "$tmp/state-before.txt"
+mainspring status > "$tmp/status-report.txt"
+git status --short --untracked-files=all > "$tmp/status-after.txt"
+shasum .taskmaster/tasks/tasks.json .mainspring/state/skill-active-state.json 2>/dev/null > "$tmp/state-after.txt"
+diff -u "$tmp/status-before.txt" "$tmp/status-after.txt"
+diff -u "$tmp/state-before.txt" "$tmp/state-after.txt"
+mainspring --repair-state --dry-run
+```
+
+## Telegram Notifications
+
+Mainspring can send Telegram notifications for key events during autonomous execution.
+
+Use this when you run several long-lived projects at once. Runtime event
+messages include `Project:`, `Folder:`, and `Tag:` so you can tell which run is
+speaking.
+
+**Setup:**
+
+1. Create a Telegram bot via @BotFather and note the bot token.
+2. Get your chat ID: send a message to the bot, then query Telegram's
+   `getUpdates` endpoint for that bot token.
+3. Set environment variables:
+   ```bash
+   export MAINSPRING_TELEGRAM_BOT_TOKEN="your-bot-token"
+   export MAINSPRING_TELEGRAM_CHAT_ID="your-chat-id"
+   ```
+4. Test: `mainspring notify-test`
+5. Enable auto-launch: `export MAINSPRING_NOTIFY_ENABLED=1`
+
+**Event classes:**
+
+| Event          | Trigger                                  | Rate limit   |
+| -------------- | ---------------------------------------- | ------------ |
+| `wave_failed`  | Wave verdict != PASS or exit_code != 0   | 1 per 5 min  |
+| `retry_loop`   | 3+ consecutive fails on the same task_id | 1 per 5 min  |
+| `loop_stopped` | Scheduler reaches terminal STOP          | 1 per 5 min  |
+| `quota_warn`   | Engine usage delta > 90% of short window | 1 per 5 min  |
+| `team_stuck`   | No new JSONL line in 30 minutes          | 1 per 5 min  |
+| `milestone`    | chapter_delta > 50 or task marked done   | 1 per 5 min  |
+| `daily_digest` | Once per day at 09:00 local              | Once per day |
+
+**How it works:**
+
+- Background daemon `notify_telegram.py watch` tails `.mainspring/logs/waves.jsonl`.
+- Idle-threshold shutdowns write an explicit `STOP` ledger row, so the daemon
+  sends `loop_stopped` instead of silently ignoring the final `IDLE` wave.
+- On shutdown, Mainspring waits briefly for its own notifier daemon to process
+  pending ledger lines before cleanup reaps the process.
+- When a retry loop is detected, Mainspring sends one stronger `retry_loop`
+  alert, suppresses duplicate `wave_failed` noise for that batch, and includes
+  local `Open:` / `Stop:` commands for the affected project when context is
+  known.
+- Actionable event messages include `Project:`, `Folder:`, `Tag:`, `Task:`,
+  `Pair:`, `Result:`, `Reason:`, `Next:`, and `Duration:` when the ledger has
+  that context. `Project:` and `Folder:` come from the watched project root;
+  `Tag:` comes from `MAINSPRING_TASKMASTER_TAG` or `.taskmaster/state.json`
+  when Taskmaster context is present. This keeps parallel Mainspring runs
+  distinguishable in one Telegram chat.
+- Auto-launched when `MAINSPRING_NOTIFY_ENABLED=1` before the wave loop starts.
+- Auto-reaped on exit (cleanup trap).
+- Daemon failure never blocks a wave.
+- Dedup state persisted in `.mainspring/state/notify-state.json`.
+- Daemon log at `.mainspring/logs/notifier.log`.
+
+**Recovery:**
+
+If the daemon stops responding:
+
+```bash
+mainspring notify-health --format json
+mainspring notify-restart
+mainspring notify-test
+```
+
+`notify-restart` only stops the notifier recorded in `.mainspring/state/notifier.pid`
+after validating that the process belongs to this runtime's ledger. Avoid broad
+process-name kills; they can kill another project's notifier.
+
+## Known Non-Product Inputs
+
+Manual credentials, production keys, live deployment, legal copy, and store
+submission steps must stay isolated as separate Taskmaster work. They should
+not block implementation work that can be completed locally.
