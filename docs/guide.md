@@ -68,6 +68,12 @@ MAINSPRING_PROVIDERS_PYTHON=python3.13 make install-user-providers
 mainspring engines
 ```
 
+Both the providers extra and runtime requirements enforce `filelock>=4.2.1,<5`
+within the existing Python <3.14 scope. This can select an earlier allowed
+LiteLLM release while newer releases cap filelock below 4. Python 3.14 keeps
+the Rich-only base runtime. Isolated install/import/mock checks do not verify
+real provider credentials, inference or downloaded model assets.
+
 ## Everyday Commands
 
 These are the commands most operators need day to day.

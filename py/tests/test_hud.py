@@ -2132,6 +2132,7 @@ def test_mainspring_requirements_declares_runtime_dependencies() -> None:
     assert runtime_lines == [
         "rich>=13.7,<15",
         'litellm>=1.83.11,<2; python_version < "3.14"',
+        'filelock>=4.2.1,<5; python_version < "3.14"',
         'aiohttp>=3.14.0; python_version < "3.14"',
         'python-dotenv>=1.2.2; python_version < "3.14"',
     ]

@@ -1122,3 +1122,41 @@ def test_isolated_pipx_install_uses_caller_project_root(tmp_path: Path) -> None:
     assert not (leaked_project_root / ".mainspring").exists()
     assert not (pipx_home / "venvs/mainspring/share/mainspring/.omx").exists()
     assert not (pipx_home / "venvs/mainspring/share/mainspring/.mainspring").exists()
+
+
+@pytest.mark.parametrize(
+    ("python_version", "enabled"),
+    [("3.11", True), ("3.12", True), ("3.13", True), ("3.14", False)],
+)
+def test_filelock_security_floor_matches_optional_provider_install_paths(
+    python_version: str,
+    enabled: bool,
+) -> None:
+    from packaging.requirements import Requirement
+
+    project = tomllib.loads(PYPROJECT.read_text(encoding="utf-8"))["project"]
+    runtime = [
+        Requirement(line.strip())
+        for line in (MAINSPRING_DIR / "requirements.txt").read_text().splitlines()
+        if line.strip() and not line.lstrip().startswith("#")
+    ]
+    providers = [
+        Requirement(value) for value in project["optional-dependencies"]["providers"]
+    ]
+    assert project["requires-python"] == ">=3.11"
+    assert all(
+        Requirement(value).name != "filelock" for value in project["dependencies"]
+    )
+    constraints = []
+    for requirements in (runtime, providers):
+        locks = [value for value in requirements if value.name == "filelock"]
+        assert len(locks) == 1, "both provider installation paths need a filelock floor"
+        lock = locks[0]
+        for vulnerable in ("3.20.4", "3.32.7", "4.2.0"):
+            assert vulnerable not in lock.specifier
+        assert "4.2.1" in lock.specifier and "4.2.5" in lock.specifier
+        assert "5.0.0" not in lock.specifier
+        assert lock.marker is not None
+        assert lock.marker.evaluate({"python_version": python_version}) is enabled
+        constraints.append((str(lock.specifier), str(lock.marker)))
+    assert constraints[0] == constraints[1]

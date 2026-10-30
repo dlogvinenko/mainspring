@@ -315,7 +315,7 @@ def test_prd_verification_snapshot_uses_current_gate_counts() -> None:
 
     assert "442" in text
     assert "172" in text
-    assert "1145 Python tests passed, 1 skipped" in text
+    assert "1149 Python tests passed, 1 skipped" in text
     assert "223 Bats" in text
     assert "90.6% (coverage gate pass)" in text
     assert "90.6%, above the 80% gate" in text

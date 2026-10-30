@@ -37,8 +37,8 @@ If `command -v mainspring` prints nothing, make sure the pipx app directory
 After local Mainspring source changes, rerun `make install-user` from this
 checkout to refresh the global command. The target recreates the pipx app
 environment before installing, so stale optional provider dependencies do not
-survive an update. For LiteLLM provider/local-model routes, use Python
-3.11-3.13: `MAINSPRING_PROVIDERS_PYTHON=python3.13 make install-user-providers`.
+survive an update. Provider installs require patched filelock and may select an
+earlier allowed LiteLLM: `MAINSPRING_PROVIDERS_PYTHON=python3.13 make install-user-providers` (Python 3.11-3.13).
 
 Source checkouts can also run `./mainspring.sh --project /path/to/your-project`.
 The packaged `mainspring` command uses its own pipx Python, so a project's
