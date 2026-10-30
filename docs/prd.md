@@ -73,8 +73,8 @@ The ten commandments. Anything below this line bows to them. If a phase plan, a 
 Refreshed 2026-10-30 for signal shutdown and Claude failure classification
 against public base `4d365cc`. Current checks below are local draft evidence;
 the baseline lint, Bats and dependency-audit failures still block a clean
-release gate. Rows carrying earlier dates remain historical evidence and were
-not revalidated as publication, installation or coverage results in this draft.
+release gate. Publication, installation and coverage rows remain historical
+evidence; they were not revalidated as current results in this draft.
 
 | Metric                                  | Value                                              | Source                                                   |
 | --------------------------------------- | -------------------------------------------------- | -------------------------------------------------------- |
