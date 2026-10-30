@@ -7,6 +7,10 @@ setup() {
   COMMON_LIB="$ROOT_DIR/lib/common.sh"
   DOCTOR_LIB="$ROOT_DIR/lib/doctor.sh"
   TMPDIR_BATS="$(mktemp -d)"
+  # Keep the invoking shell's interpreter choices out of each fixture.
+  unset MAINSPRING_PY
+  unset MAINSPRING_RUNTIME_PYTHON
+  unset VIRTUAL_ENV
 }
 
 teardown() {

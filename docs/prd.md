@@ -72,9 +72,9 @@ The ten commandments. Anything below this line bows to them. If a phase plan, a 
 
 Refreshed 2026-10-30 for signal shutdown and Claude failure classification
 against public base `4d365cc`. Current checks below are local draft evidence;
-the baseline lint, Bats and dependency-audit failures still block a clean
-release gate. Publication, installation and coverage rows remain historical
-evidence; they were not revalidated as current results in this draft.
+the baseline lint and dependency-audit failures still block a clean gate.
+Publication, installation and coverage rows remain historical evidence;
+they were not revalidated as current results in this draft.
 
 | Metric                                  | Value                                              | Source                                                   |
 | --------------------------------------- | -------------------------------------------------- | -------------------------------------------------------- |
@@ -88,7 +88,7 @@ evidence; they were not revalidated as current results in this draft.
 | Pytest suite files                      | 44                                                 | `find py/tests -name 'test_*.py'` plus count             |
 | Bats suite files                        | 12                                                 | `find tests/bats -name '*.bats'` plus count              |
 | Python line coverage                    | 90.6% (coverage gate pass)                         | `make coverage` on 2026-06-16                           |
-| Full local gate                         | blocked: 1145 Python tests passed, 1 skipped; 223 Bats (221 passed, 2 baseline failures); HUD/docs-site and package smoke pass; 410 baseline Ruff findings; 13 baseline filelock audit findings | separate local gates on 2026-10-30; `make all` stops at baseline lint |
+| Full local gate                         | blocked: 1145 Python tests passed, 1 skipped; 223 Bats passed (doctor fixtures isolate inherited interpreter overrides); HUD/docs-site and package smoke pass; 410 baseline Ruff findings; 13 baseline filelock audit findings | separate local gates on 2026-10-30; `make all` stops at baseline lint |
 | Global editable CLI                     | passes: `make install-user`; `command -v mainspring` resolves `~/.local/bin/mainspring`; installed HUD captured output exits one-shot; unsupported release-management probes fail with `Unknown command` | local pipx smoke on 2026-06-15 |
 | Taskmaster runtime state                | not tracked in source release                      | `py/tests/test_no_hardcoded_paths.py`                    |
 | Public release checklist                | clean `main` is public; hosted CI and GitHub Pages are green; remaining external action is signing `v1.0.0` and publishing the GitHub Release | GitHub repository state, hosted Actions runs, Pages deployment, signing key |
