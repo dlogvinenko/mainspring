@@ -371,7 +371,48 @@ cleanup_children() {
     ACTIVE_HEARTBEAT_PID=""
   fi
   if [ -n "${ACTIVE_CHILD_PID:-}" ]; then
-    kill "$ACTIVE_CHILD_PID" >/dev/null 2>&1 || true
+    # Snapshot the owned pipeline and its descendants before signalling parents.
+    # A CLI may ignore TERM or leave subprocesses behind when its parent exits.
+    local pid pid_list="" live_pid_list attempt stop_signal
+    local -a active_pids=()
+    while IFS= read -r pid; do
+      active_pids+=("$pid")
+      pid_list="${pid_list:+$pid_list,}$pid"
+    done < <(ps -axo pid=,ppid= | awk -v root="$ACTIVE_CHILD_PID" '
+      { parent[$1] = $2 }
+      END {
+        for (pid in parent) {
+          ancestor = pid
+          while (ancestor in parent && ancestor != root && parent[ancestor] != ancestor)
+            ancestor = parent[ancestor]
+          if (ancestor == root) print pid
+        }
+      }')
+    if [ "${#active_pids[@]}" -eq 0 ]; then
+      active_pids=("$ACTIVE_CHILD_PID")
+      pid_list="$ACTIVE_CHILD_PID"
+    fi
+    for stop_signal in TERM KILL; do
+      attempt=0
+      while :; do
+        # Permanently drop exited/zombie IDs before signalling or escalating.
+        active_pids=()
+        live_pid_list=""
+        while IFS= read -r pid; do
+          active_pids+=("$pid")
+          live_pid_list="${live_pid_list:+$live_pid_list,}$pid"
+        done < <(ps -o pid=,stat= -p "$pid_list" 2>/dev/null |
+          awk '$2 !~ /^Z/ { print $1 }')
+        pid_list="$live_pid_list"
+        [ -n "$pid_list" ] || break 2
+        if [ "$attempt" -eq 0 ]; then
+          kill -"$stop_signal" "${active_pids[@]}" >/dev/null 2>&1 || true
+        fi
+        [ "$attempt" -lt 20 ] || break
+        sleep 0.1
+        attempt=$((attempt + 1))
+      done
+    done
     wait "$ACTIVE_CHILD_PID" >/dev/null 2>&1 || true
     ACTIVE_CHILD_PID=""
   fi
@@ -379,7 +420,17 @@ cleanup_children() {
   release_lock
 }
 
-trap cleanup_children EXIT INT TERM
+# A signal must end the run: returning from the trap would resume the wave loop
+# without the lock. Exit with the conventional 128+signal status.
+stop_on_signal() {
+  trap - INT TERM
+  cleanup_children
+  exit "$1"
+}
+
+trap cleanup_children EXIT
+trap 'stop_on_signal 130' INT
+trap 'stop_on_signal 143' TERM
 
 # ---------------------------------------------------------------------------
 # CLI parsing and runtime dispatch

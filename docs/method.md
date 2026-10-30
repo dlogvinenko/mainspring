@@ -132,7 +132,7 @@ the public Mainspring source release.
 | Skill source LOC         | 253 (`SKILL.md`)                                       | `wc -l method/skill/SKILL.md`                                          |
 | Method package LOC       | 1842 (skill + templates + install + README)            | `find method -type f \| sort \| xargs wc -l`                           |
 | Public Method doc LOC    | 542                                                    | `wc -l docs/method.md`                                                 |
-| Canonical example        | `docs/prd.md` (1409 LOC)                               | `wc -l docs/prd.md`                                                    |
+| Canonical example        | `docs/prd.md` (1421 LOC)                               | `wc -l docs/prd.md`                                                    |
 | Method CLI commands      | 5 shipped                                              | `mainspring init`, `decompose`, `scope-check`, `next`, `validate-prd`  |
 | Real-world applications  | 1 (Mainspring itself)                                  | this is v0.1; more applications will validate or revise                |
 

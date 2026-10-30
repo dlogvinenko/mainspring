@@ -433,6 +433,18 @@ until the current state is understood.
 | Stop this project | `mainspring stop --force` | Terminates recorded current-project Mainspring processes. |
 | Repair stale state | `mainspring --repair-state --force` | Applies only the reviewed repair preview. |
 
+Ctrl-C exits the active run with status 130; SIGTERM, including
+`mainspring stop --force`, exits with status 143. Shutdown stops only the
+active engine pipeline and its descendants, gives them a short TERM grace
+period, drops observed exited or zombie PIDs, and escalates only surviving
+processes to KILL before releasing the runtime lock. No following wave starts.
+
+For structured Claude logs, quota classification uses engine error evidence
+or a rate-limit event with status `rejected`. An `allowed_warning` event means
+work is still permitted. Task prose about quotas and malformed rate-limit
+metadata do not by themselves turn an unrelated process failure into quota
+exhaustion.
+
 Use `mainspring stop --help`, `mainspring --repair-state --dry-run`, and
 `mainspring last-run` before any forceful recovery. `mainspring --last-run` and
 `mainspring taskmaster ...` launch work; use them only after the recovery check

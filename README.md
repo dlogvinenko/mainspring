@@ -140,7 +140,7 @@ HUD commands:
 | Machine-readable snapshot | `mainspring hud --json --once` | Emits `run_count`, `live_count`, `needs_action_count`, `stale_count`, and `runs[]` for scripts and agents. |
 | Include old runs | `mainspring hud --all-runtimes` | Adds stale recorded runtimes to the live view. |
 | Current project only | `mainspring hud --local` | Hides other projects. |
-| Stop current project | `mainspring stop --force` | Stops only this project's recorded Mainspring processes. |
+| Stop current project | `mainspring stop --force` | Stops this project's active run and its owned engine processes before releasing the lock; no following wave starts. |
 
 Use `mainspring stop --help` before forceful recovery outside the current
 project.
@@ -199,8 +199,8 @@ Registered engine keys: `claude`, `codex`, `anthropic`, `openai`, `azure`,
 | Ollama | LiteLLM provider | Local Ollama service. |
 | LiteLLM | Generic bridge | Provider-specific model string and credentials. |
 
-Every engine path must fail closed and must not silently fall back to another
-provider, model, or reviewer.
+Engine paths fail closed and never silently fall back to another provider, model or reviewer. Structured Claude quota failures require engine error or rejection evidence.
+Task prose about quotas does not itself mean usage is exhausted.
 
 Use `mainspring engines` to inspect setup gaps before a run. Use `mainspring limits` before long unattended work:
 `ready` means runnable plus quota/readiness signal; `adapter-only` means credentials or quota are not proven by that offline snapshot.

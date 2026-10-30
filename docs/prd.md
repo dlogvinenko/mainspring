@@ -70,29 +70,41 @@ The ten commandments. Anything below this line bows to them. If a phase plan, a 
 
 ## Current truth snapshot (verified)
 
-Captured 2026-06-15 after HUD empty-state and active-card polish, packaged
-runtime Python isolation for global HUD use, command-help hardening, public
-release-surface copy cleanup, installed-wheel CLI contract guards, and a fresh
-release gate against the standalone repository layout.
+Refreshed 2026-10-30 for signal shutdown and Claude failure classification
+against public base `4d365cc`. Current checks below are local draft evidence;
+the baseline lint, Bats and dependency-audit failures still block a clean
+release gate. Rows carrying earlier dates remain historical evidence and were
+not revalidated as publication, installation or coverage results in this draft.
 
 | Metric                                  | Value                                              | Source                                                   |
 | --------------------------------------- | -------------------------------------------------- | -------------------------------------------------------- |
-| `mainspring.sh` LOC                     | 391                                                | `wc -l mainspring.sh` on 2026-06-16                      |
-| Bash functions across entrypoint + lib  | 171                                                | `rg` function-pattern scan on `mainspring.sh lib/*.sh` on 2026-06-16 |
+| `mainspring.sh` LOC                     | 442                                                | `wc -l mainspring.sh` on 2026-10-30                      |
+| Bash functions across entrypoint + lib  | 172                                                | function-pattern scan on `mainspring.sh lib/*.sh` on 2026-10-30 |
 | Source shell syntax                     | passes                                             | `bash -n mainspring.sh lib/*.sh`                         |
 | Source shell lint                       | passes                                             | `shellcheck -S warning mainspring.sh lib/*.sh`           |
-| Python lint                             | passes                                             | `ruff check py`                                          |
-| Python format                           | passes, 91 files already formatted                 | `ruff format --check py`                                 |
+| Python lint                             | 410 baseline findings, zero additions                | Ruff 0.17.3 comparison with public `4d365cc` on 2026-10-30 |
+| Python format                           | passes, 93 files already formatted                 | `ruff format --check py`                                 |
 | Active embedded Python in shell paths   | 0 heredoc / inline-parser hits                     | `rg` scan for `python3 - <<` and `python3 -c` in shell    |
-| Pytest suite files                      | 42                                                 | `find py/tests -name 'test_*.py'` plus count             |
+| Pytest suite files                      | 44                                                 | `find py/tests -name 'test_*.py'` plus count             |
 | Bats suite files                        | 12                                                 | `find tests/bats -name '*.bats'` plus count              |
 | Python line coverage                    | 90.6% (coverage gate pass)                         | `make coverage` on 2026-06-16                           |
-| Full local gate                         | passes: 1124 Python tests passed, 1 skipped; 223 Bats; HUD/docs-site smoke; dependency audit; package smoke; PRD validation | `make release-check` on 2026-06-16 |
+| Full local gate                         | blocked: 1145 Python tests passed, 1 skipped; 223 Bats (221 passed, 2 baseline failures); HUD/docs-site and package smoke pass; 410 baseline Ruff findings; 13 baseline filelock audit findings | separate local gates on 2026-10-30; `make all` stops at baseline lint |
 | Global editable CLI                     | passes: `make install-user`; `command -v mainspring` resolves `~/.local/bin/mainspring`; installed HUD captured output exits one-shot; unsupported release-management probes fail with `Unknown command` | local pipx smoke on 2026-06-15 |
 | Taskmaster runtime state                | not tracked in source release                      | `py/tests/test_no_hardcoded_paths.py`                    |
 | Public release checklist                | clean `main` is public; hosted CI and GitHub Pages are green; remaining external action is signing `v1.0.0` and publishing the GitHub Release | GitHub repository state, hosted Actions runs, Pages deployment, signing key |
 | PRD readiness score                     | 900 / 1000                                        | source-install product path is green; remaining points are publication checklist items |
 | Telegram notifier health in clean env   | disabled until `MAINSPRING_NOTIFY_ENABLED=1`       | `./mainspring.sh notify-health --format json`            |
+
+Signal shutdown ends the run with exit status 130 for SIGINT or 143 for
+SIGTERM. It terminates only the active engine pipeline and its descendants,
+with bounded TERM/KILL cleanup before releasing the runtime lock, and starts
+no further wave. Regressions cover both Codex and Claude pipelines, including an engine
+and subprocess that ignore TERM, without making model calls.
+
+Structured Claude failure classification accepts engine error evidence and
+`rejected` rate-limit events. An `allowed_warning` event is not exhaustion;
+task prose mentioning quota and malformed rate-limit metadata do not cause a
+quota classification or crash the failure-reporting path.
 
 **Resolved historical critical bug:** the former SC2259 path
 `"${cmd[@]}" | tee "$raw_file" | python3 - <<'PY' ... PY` let the heredoc
@@ -1008,13 +1020,13 @@ source-install release. Hosted docs are already published at
 
 - [x] `shellcheck -S warning` clean on all `*.sh` (zero errors, zero warnings; no exceptions) _(`make all`: shellcheck OK)_
 - [x] `bash -n` clean on all `*.sh` _(`make all`: bash -n OK)_
-- [x] `ruff check` + `ruff format --check` clean on all `*.py` _(`make all`: ruff check OK, 91 files already formatted)_
+- [ ] `ruff check` + `ruff format --check` clean on all `*.py` _(Ruff 0.17.3 reports 410 findings already present on public baseline `4d365cc`; all 93 Python files are formatted)_
 - [x] Built-in writer/reviewer pair modes resolve through the public CLI and self-test surfaces _(Bats pair parsing, engine command construction, `--self-test`, and `--self-test-all` coverage; real provider-matrix evidence is follow-up credibility work)_
 - [x] Review gate demonstrably receives writer output (no SC2259 regression) _(P1-4 real wave evidence + `make all` stream/review regression tests)_
 
 ### Architecture
 
-- [x] Main entrypoint ≤ 500 LOC _(391 LOC after CLI parsing, runtime dispatch extraction, public env cleanup, and source archive root detection; verified by `wc -l mainspring.sh`)_
+- [x] Main entrypoint ≤ 500 LOC _(442 LOC including bounded signal cleanup; verified by `wc -l mainspring.sh` on 2026-10-30)_
 - [x] Zero `python3 - <<'PY'` heredocs _(all extracted in P2)_
 - [x] No `python3 -c` invocations longer than 80 chars _(all consolidated in P2-2)_
 - [x] No duplicated writer/reviewer engine paths _(unified `run_ai_turn` in `lib/engines.sh`)_
@@ -1406,4 +1418,4 @@ path, comparison pages, 60-second demo, and benchmark evidence.
 
 ---
 
-_Last edited: 2026-06-15. This file is the canonical plan; if any other file in the repo disagrees, update it._
+_Last edited: 2026-10-30. This file is the canonical plan; if any other file in the repo disagrees, update it._
