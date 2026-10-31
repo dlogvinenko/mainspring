@@ -840,7 +840,7 @@ After P6 lands, consult `mainspring --metrics --routing` and use the data, not t
 
 ### Reading `--metrics`
 
-Three signals matter most:
+Metrics ignore malformed JSON and non-object JSONL rows. Included objects remain in totals when `exit_code` is missing or invalid; success requires `PASS` and an actual integer `0` (not Boolean, string, null or float). Time filters require usable zoned timestamps; the ledger writer emits UTC/Z and readers accept explicit offsets. Without a time filter, timestamp shape does not exclude rows. A date-only `--since YYYY-MM-DD` still starts the window at midnight UTC. Three signals matter most:
 
 1. **Pass rate per pair, last 14 days.** If a pair drops below 70%, investigate before another wave on it. Below 50% → auto-disable should have kicked in (P6).
 2. **Top 5 stuck task ids.** A stuck task = ≥3 consecutive FAIL waves. Promote stuck tasks out of the queue: either manual review, switch pair, or mark `blocked` with a reason.

@@ -107,12 +107,14 @@ normal first-run path.
 | Metrics | `mainspring --metrics --days 7 --routing` | Read pass rate, duration, routing, cost, and stuck-task signals for the last week. |
 | Replay | `mainspring replay show last .mainspring/logs/waves.jsonl` | Inspect past waves without trusting memory or terminal scrollback. |
 
+Metrics ignore malformed JSON and non-object JSONL rows. Included objects remain in totals when `exit_code` is missing or invalid; success requires `PASS` and an actual
+integer `0` (not Boolean, string, null or float). Time filters require usable zoned timestamps; the ledger writer emits UTC/Z and readers accept explicit offsets. Without
+a time filter, timestamp shape does not exclude rows. A date-only `--since YYYY-MM-DD` still starts the window at midnight UTC.
+
 ## HUD
 
-The HUD is global and terminal-native. Plain `mainspring hud` opens the live dashboard immediately. It shows every live
-Mainspring work process on the machine with project folder, PID, Taskmaster tag,
-task, lightweight project progress, wave, started/stopped times, newest activity
-first, Telegram health, quota, and team state:
+The HUD is global and terminal-native. Plain `mainspring hud` opens the live dashboard immediately. It shows every live Mainspring work process on the machine with
+project folder, PID, Taskmaster tag, task, lightweight project progress, wave, started/stopped times, newest activity first, Telegram health, quota, and team state:
 
 ```bash
 mainspring hud
@@ -120,12 +122,9 @@ mainspring hud
 
 ![Mainspring HUD terminal preview](docs/assets/hud-preview.svg)
 
-HUD state is operator health, not just process existence: `Running` means a
-run is currently working, `Waiting` means the loop is alive after a clean
-wave and waiting for the next result, `Blocked` means repeated failures need
-human action, `Failed` means the latest wave failed but has not reached the
-blocked threshold, and `Stopped cleanly` means the loop found no work or ended
-without an active failure. `Not running` means a past recorded run has no live process.
+HUD state is operator health, not just process existence: `Running` means a run is currently working, `Waiting` means the loop is alive after a clean wave and waiting for
+the next result, `Blocked` means repeated failures need human action, `Failed` means the latest wave failed but has not reached the blocked threshold, and `Stopped
+cleanly` means the loop found no work or ended without an active failure. `Not running` means a past recorded run has no live process.
 
 The `Progress` value is intentionally lightweight and read-only: Taskmaster leaf tasks
 first, then Product Requirements Document (PRD) checkboxes if Taskmaster is not

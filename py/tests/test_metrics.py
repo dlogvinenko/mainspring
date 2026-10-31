@@ -6,8 +6,10 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
+
+import pytest
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
@@ -62,6 +64,184 @@ def _write_ledger(path: Path, entries: list[dict]) -> None:
         "\n".join(json.dumps(e) for e in entries) + "\n",
         encoding="utf-8",
     )
+
+
+def test_metrics_ignore_non_object_json_rows(tmp_path: Path) -> None:
+    entries = [
+        _make_entry(wave_id="valid-pass"),
+        _make_entry(wave_id="valid-fail", writer="ollama", verdict="FAIL", exit_code=1),
+    ]
+    ledger = tmp_path / "synthetic.jsonl"
+    ledger.write_text(
+        "\n".join(
+            [
+                json.dumps(entries[0]),
+                "null",
+                "[]",
+                '[{"verdict": "PASS"}]',
+                "42",
+                "true",
+                '"non-wave text"',
+                "malformed JSON",
+                json.dumps(entries[1]),
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    assert metrics.read_ledger(ledger) == entries
+    for extra in ([], ["--routing"]):
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(HERE.parent / "metrics.py"),
+                str(ledger),
+                "--format",
+                "json",
+                *extra,
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        assert result.returncode == 0, result.stderr
+        payload = json.loads(result.stdout)
+        if extra:
+            assert payload["pass_rate_by_pair"]["claude+codex"]["pass"] == 1
+            assert payload["pass_rate_by_pair"]["ollama+codex"]["pass"] == 0
+        else:
+            assert payload["total_waves"] == 2
+            assert payload["success_rate"] == 50.0
+
+
+def test_metrics_missing_exit_code_does_not_count_as_success(tmp_path: Path) -> None:
+    partial = _make_entry(wave_id="missing-exit")
+    del partial["exit_code"]
+    entries = [_make_entry(wave_id="observed-success"), partial]
+    summary = metrics.compute_metrics(entries)
+    routing = metrics.compute_routing_metrics(entries)
+
+    assert summary["total_waves"] == 2
+    assert summary["success_rate"] == 50.0
+    assert summary["pass_rate_per_pair"]["claude+codex"] == 50.0
+    assert routing["pass_rate_by_pair"]["claude+codex"]["pass"] == 1
+    assert routing["pass_rate_by_topology"]["solo"]["pass_rate"] == 50.0
+
+    ledger = tmp_path / "synthetic-partial.jsonl"
+    _write_ledger(ledger, entries)
+    for extra in ([], ["--routing"]):
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(HERE.parent / "metrics.py"),
+                str(ledger),
+                "--format",
+                "json",
+                *extra,
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        assert result.returncode == 0, result.stderr
+        payload = json.loads(result.stdout)
+        if extra:
+            assert payload["pass_rate_by_pair"]["claude+codex"]["pass_rate"] == 50.0
+        else:
+            assert payload["success_rate"] == 50.0
+
+
+@pytest.mark.parametrize(
+    ("exit_status", "successful"),
+    [
+        (0, True),
+        (1, False),
+        (-1, False),
+        (False, False),
+        (True, False),
+        (None, False),
+        ("0", False),
+        ("1", False),
+        (0.0, False),
+        (-0.0, False),
+        (1.0, False),
+        (-1.0, False),
+        (0.5, False),
+    ],
+)
+def test_metrics_success_requires_integer_exit_status(
+    exit_status: object, successful: bool
+) -> None:
+    typed = _make_entry(wave_id="typed-status")
+    typed["exit_code"] = exit_status
+    entries = [_make_entry(wave_id="known-success"), typed]
+    expected_passes = 2 if successful else 1
+    expected_rate = 100.0 if successful else 50.0
+
+    summary = metrics.compute_metrics(entries)
+    routing = metrics.compute_routing_metrics(entries)
+
+    assert summary["total_waves"] == 2
+    assert summary["success_rate"] == expected_rate
+    assert summary["pass_rate_per_pair"]["claude+codex"] == expected_rate
+    assert routing["pass_rate_by_pair"]["claude+codex"]["total"] == 2
+    assert routing["pass_rate_by_pair"]["claude+codex"]["pass"] == expected_passes
+    assert routing["pass_rate_by_topology"]["solo"]["pass_rate"] == expected_rate
+
+
+def test_metrics_time_filter_skips_unzoned_row_timestamps(tmp_path: Path) -> None:
+    now = datetime.now(UTC)
+    zoned = _make_entry(wave_id="utc-z", ts=now.isoformat().replace("+00:00", "Z"))
+    offset = _make_entry(
+        wave_id="explicit-offset",
+        ts=now.astimezone(timezone(timedelta(hours=2))).isoformat(),
+        verdict="FAIL",
+        exit_code=1,
+        duration=120,
+    )
+    entries = [
+        zoned,
+        _make_entry(wave_id="naive", ts=now.replace(tzinfo=None).isoformat()),
+        _make_entry(wave_id="date-only", ts=now.date().isoformat()),
+        _make_entry(wave_id="invalid", ts="not-a-date"),
+        offset,
+    ]
+
+    assert metrics.filter_entries(entries, days=7) == [zoned, offset]
+    assert metrics.filter_entries(entries, since=now.date().isoformat()) == [
+        zoned,
+        offset,
+    ]
+    assert metrics.filter_entries(entries) == entries
+
+    ledger = tmp_path / "synthetic-timezones.jsonl"
+    _write_ledger(ledger, entries)
+    for extra in ([], ["--routing"]):
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(HERE.parent / "metrics.py"),
+                str(ledger),
+                "--format",
+                "json",
+                *extra,
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        assert result.returncode == 0, result.stderr
+        payload = json.loads(result.stdout)
+        if extra:
+            assert payload["pass_rate_by_pair"]["claude+codex"]["total"] == 2
+            assert payload["mean_duration_by_task_class"]["unknown"] == 90.0
+        else:
+            assert payload["total_waves"] == 2
+            assert payload["mean_duration_s"] == 90.0
 
 
 # ── compute_metrics ────────────────────────────────────────────────────

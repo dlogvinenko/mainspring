@@ -413,6 +413,10 @@ Stable fields:
 
 `--status` reads this ledger, ignores malformed lines, prints the last valid wave, and derives routing hints from recent failures.
 
+Metrics ignore malformed JSON and non-object JSONL rows. Included objects remain in totals when `exit_code` is missing or invalid; success requires `PASS` and an actual
+integer `0` (not Boolean, string, null or float). Time filters require usable zoned timestamps; the ledger writer emits UTC/Z and readers accept explicit offsets. Without
+a time filter, timestamp shape does not exclude rows. A date-only `--since YYYY-MM-DD` still starts the window at midnight UTC.
+
 ## Logs
 
 Logs are written under `.mainspring/logs/`.

@@ -35,7 +35,7 @@ LOW_COST_MODEL_MARKERS = ("mini", "haiku", "spark", "fast", "cheap")
 
 
 def read_ledger(path: Path) -> list[dict]:
-    """Parse all valid JSONL entries from *path*."""
+    """Read wave objects, skipping malformed JSON and non-object rows."""
     entries: list[dict] = []
     if not path.is_file():
         return entries
@@ -44,7 +44,9 @@ def read_ledger(path: Path) -> list[dict]:
         if not raw:
             continue
         try:
-            entries.append(json.loads(raw))
+            parsed = json.loads(raw)
+            if isinstance(parsed, dict):
+                entries.append(parsed)
         except Exception:
             continue
     return entries
@@ -55,7 +57,8 @@ def _parse_timestamp(entry: dict) -> datetime | None:
     if not ts:
         return None
     try:
-        return datetime.fromisoformat(ts.replace("Z", "+00:00"))
+        parsed = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+        return parsed if parsed.tzinfo is not None else None
     except Exception:
         return None
 
@@ -72,8 +75,8 @@ def _get_pair(entry: dict) -> str:
 
 def _is_success(entry: dict) -> bool:
     verdict = str(entry.get("verdict") or "").upper()
-    exit_code = entry.get("exit_code", 0)
-    return verdict == "PASS" and exit_code == 0
+    exit_code = entry.get("exit_code")
+    return verdict == "PASS" and type(exit_code) is int and exit_code == 0
 
 
 def _parse_float(value: object) -> float | None:
