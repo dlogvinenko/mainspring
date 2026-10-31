@@ -262,6 +262,14 @@ automation setups can override runtime paths with `MAINSPRING_RUNTIME_DIR` or
 
 ## Writer / Reviewer Pairs
 
+Post-write scope checks use all discovered scope paths, while the progress
+display keeps its 80-path limit. Checks run before idle or CI-retry routing and
+after reviewer-feedback writer retries, including failed attempts. A violation
+blocks further review and automatic checkpoints, preserving an initial failed
+writer's exit status. Existing blacklist exemptions, task-state rules and mtime
+discovery filters remain in place. This post-write guard provides no rollback
+or read isolation.
+
 Quota snapshots keep malformed numeric or nested evidence unknown. Remaining
 percentages must be finite numbers from 0 to 100; booleans are not measurements.
 Valid legacy used percentages above 100 still yield zero remaining. Binary

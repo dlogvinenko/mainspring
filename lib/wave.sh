@@ -88,7 +88,7 @@ print_forbidden_wave_scope_files() {
 print_wave_scope_files() {
   local marker_file="$1"
   local progress_files forbidden_files
-  progress_files="$(print_wave_progress_files "$marker_file")"
+  progress_files="$(_print_wave_progress_files "$marker_file")"
   forbidden_files="$(print_forbidden_wave_scope_files "$marker_file")"
   merge_changed_file_lists "$progress_files" "$forbidden_files"
 }
@@ -196,7 +196,7 @@ count_wave_progress_files() {
     | wc -l | tr -d ' '
 }
 
-print_wave_progress_files() {
+_print_wave_progress_files() {
   local marker_file="$1"
   find "$ROOT_DIR" \
     -type f \
@@ -229,6 +229,9 @@ print_wave_progress_files() {
     ! -name '*.pyc' \
     ! -name 'AGENTS.md' \
     ! -name '.DS_Store' \
-    | sed "s#^$ROOT_DIR/##" \
-    | sed -n '1,80p'
+    | sed "s#^$ROOT_DIR/##"
+}
+
+print_wave_progress_files() {
+  _print_wave_progress_files "$1" | sed -n '1,80p'
 }

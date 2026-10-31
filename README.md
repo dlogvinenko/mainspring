@@ -183,7 +183,7 @@ Full setup and recovery commands are in [`docs/guide.md`](docs/guide.md).
 | Mainspring Method | The templates and discipline around product requirements, decisions, audit, reality reset, and task breakdown. |
 | Wave | One bounded writer/reviewer attempt with logs, changed files, tests, verdict, and next action. |
 | Writer/reviewer pair | One engine writes the change; another independently checks the result. Example: `claude+codex` or `codex+codex`. |
-| Fail closed | If credentials, reviewer output, JSON, tests, or scope are wrong, Mainspring stops instead of pretending the work passed. |
+| Fail closed | If credentials, reviewer output, JSON, tests, or scope are wrong, Mainspring stops instead of pretending the work passed. Post-write blacklist checks use uncapped discovered paths before idle/retry routing and after feedback retries. |
 
 ## Engine Support
 

@@ -690,6 +690,7 @@ SH
     skip "required helper missing: $wave_loop_lib"
   fi
 
+  source "${wave_loop_lib%/*}/write_scope.sh"
   mkdir -p "$stub_bin" "$LOG_DIR"
   cat > "$stub_bin/task-master" <<'SH'
 #!/bin/sh

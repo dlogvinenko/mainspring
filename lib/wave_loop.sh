@@ -287,7 +287,13 @@ Retry instructions:
       echo
     } >> "$LOG_FILE"
 
-    if [ $EXIT_CODE -ne 0 ]; then
+    local scope_violations=""
+    local scope_violation=false
+    if ! scope_violations="$(printf '%s\n' "$WAVE_SCOPE_FILES" | check_write_scope 2>&1)"; then
+      scope_violation=true
+    fi
+
+    if [ $EXIT_CODE -ne 0 ] && [ "$scope_violation" != true ]; then
       local ENGINE_FAILURE_REASON ENGINE_FAILURE_NEXT_ACTION
       ENGINE_FAILURE_REASON="$(classify_engine_failure_reason "$ENGINE" "$EXIT_CODE" "$WAVE_DISPLAY_FILE")"
       ENGINE_FAILURE_NEXT_ACTION="Inspect $LOG_FILE and rerun only after the worker error is understood."
@@ -352,7 +358,7 @@ Retry instructions:
     AUTO_RETRY_CI_NEXT_OUTPUT=""
     AUTO_RETRY_CI_TASK_DETAILS=""
 
-    if [ "$WAVE_PROGRESS_COUNT" -eq 0 ] && [ "$AGENT_MODE_ALLOWS_NO_CHANGE" != true ]; then
+    if [ "$WAVE_PROGRESS_COUNT" -eq 0 ] && [ "$AGENT_MODE_ALLOWS_NO_CHANGE" != true ] && [ "$scope_violation" != true ]; then
       WAVE_VERDICT="IDLE"
       WAVE_FAILURE_REASON="engine:no_file_changes"
       WAVE_LEDGER_PHASE="idle"
@@ -367,9 +373,7 @@ Retry instructions:
         echo "No product/source file changes detected, but ${AGENT_MODE:-code} mode allows advisory no-edit output. Sending wave to review gate."
         echo "No product/source file changes detected, but ${AGENT_MODE:-code} mode allows advisory no-edit output. Sending wave to review gate." >> "$LOG_FILE"
       fi
-      local scope_violations
-      scope_violations=""
-      if ! scope_violations="$(printf '%s\n' "$WAVE_SCOPE_FILES" | check_write_scope 2>&1)"; then
+      if [ "$scope_violation" = true ]; then
         WAVE_VERDICT="FAIL"
         WAVE_FAILURE_REASON="scope:violation"
         WAVE_LEDGER_PHASE="review"
@@ -388,6 +392,9 @@ Retry instructions:
         } >> "$LOG_FILE"
         append_wave_ledger "$WAVE" "$MODE" "$TOPOLOGY" "" "${WORK_ID:-$TASK_ID}" "$WAVE_LEDGER_PHASE" "$ENGINE" "$REVIEW_ENGINE" "$WAVE_START_EPOCH" "$(date +%s)" "$EXIT_CODE" "$WAVE_PROGRESS_FILES" "$WAVE_VERDICT" "$WAVE_FAILURE_REASON" "$WAVE_RETRY_COUNT" "" "$WAVE_NEXT_ACTION" "$WAVE_LEDGER_FILE" "$MODEL_OVERRIDE" "$REVIEW_MODEL_OVERRIDE" "$CODEX_REASONING_EFFORT" "$TASK_STATUS_BEFORE" "$TASK_STATUS_AFTER" "$WAVE_PROMPT_FILE" "$WAVE_PROMPT_SHA256" "$WAVE_GIT_HEAD" "$WAVE_GIT_STATUS" "$WAVE_PRD_PATH" "$WAVE_USAGE_FILE"
         rm -f "$WAVE_DISPLAY_FILE"
+        if [ "$EXIT_CODE" -ne 0 ]; then
+          return "$EXIT_CODE"
+        fi
         if [ "$RUN_ONCE" = true ]; then
           echo "Run-once mode enabled. Stopping after write-scope fail on wave $WAVE."
           echo "Run-once mode enabled. Stopping after write-scope fail on wave $WAVE." >> "$LOG_FILE"
@@ -488,10 +495,13 @@ Do not start a different task. Fix this same work item according to the reviewer
               echo
             } >> "$LOG_FILE"
             cat "$retry_display" >> "$SUMMARY_FILE"
-            if [ "$retry_exit" -eq 0 ]; then
-              local retry_scope_violations
-              retry_scope_violations=""
-              if ! retry_scope_violations="$(merge_changed_file_lists "$WAVE_SCOPE_FILES" "$retry_scope_files" | check_write_scope 2>&1)"; then
+            local retry_scope_violations=""
+            local retry_scope_violation=false
+            if ! retry_scope_violations="$(merge_changed_file_lists "$WAVE_SCOPE_FILES" "$retry_scope_files" | check_write_scope 2>&1)"; then
+              retry_scope_violation=true
+            fi
+            if [ "$retry_exit" -eq 0 ] || [ "$retry_scope_violation" = true ]; then
+              if [ "$retry_scope_violation" = true ]; then
                 review_failure_reason="scope:violation"
                 review_next_action="Remove forbidden path changes, rerun verification, and rerun the same item before reviewer gate."
                 REVIEW_GATE_FAILURE_REASON="scope:violation"

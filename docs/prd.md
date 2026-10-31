@@ -79,14 +79,14 @@ they were not revalidated as current results in this draft.
 | Metric                                  | Value                                              | Source                                                   |
 | --------------------------------------- | -------------------------------------------------- | -------------------------------------------------------- |
 | `mainspring.sh` LOC                     | 442                                                | `wc -l mainspring.sh` on 2026-10-30                      |
-| Bash functions across entrypoint + lib  | 172                                                | function-pattern scan on `mainspring.sh lib/*.sh` on 2026-10-30 |
+| Bash functions across entrypoint + lib  | 173                                                | function-pattern scan on current `mainspring.sh lib/*.sh` |
 | Source shell syntax                     | passes                                             | `bash -n mainspring.sh lib/*.sh`                         |
 | Source shell lint                       | passes                                             | `shellcheck -S warning mainspring.sh lib/*.sh`           |
 | Python lint                             | 410 baseline findings, zero additions                | Ruff 0.17.3 comparison with public `4d365cc` on 2026-10-30 |
 | Python format                           | passes, 97 files already formatted                 | `ruff format --check py`                                 |
 | Active embedded Python in shell paths   | 0 heredoc / inline-parser hits                     | `rg` scan for `python3 - <<` and `python3 -c` in shell    |
 | Pytest suite files                      | 47                                                 | `find py/tests -name 'test_*.py'` plus count             |
-| Bats suite files                        | 12                                                 | `find tests/bats -name '*.bats'` plus count              |
+| Bats suite files                        | 14                                                 | `find tests/bats -name '*.bats'` plus count              |
 | Python line coverage                    | 90.6% (coverage gate pass)                         | `make coverage` on 2026-06-16                           |
 | Full local gate                         | blocked: 1149 Python tests passed, 1 skipped; 223 Bats passed (doctor fixtures isolate inherited interpreter overrides); HUD/docs-site and package smoke pass; 410 baseline Ruff findings; known filelock findings resolved in the validated public dependency graphs | separate local gates on 2026-10-30; `make all` stops at baseline lint |
 | Provider dependency floor               | filelock >=4.2.1,<5 on Python <3.14; actual 3.11 requirements and 3.13 providers-extra installs/mock checks pass; public graphs have 0 known findings; 3.14 remains Rich-only | isolated validation on 2026-10-30; local unpublished source and real providers are outside registry/mock proof |
@@ -355,7 +355,7 @@ The kernel auto-releases fd 9 on any exit (including SIGKILL), so the script can
 ```bash
 # lib/write_scope.sh
 # Reads newline-separated changed file paths on stdin.
-# Returns 0 if all paths are inside the allowed product scope.
+# Returns 0 if no supplied path matches the post-write blacklist.
 # Returns 1 and prints offenders on stderr otherwise.
 check_write_scope() {
   local offenders=()
@@ -365,13 +365,13 @@ check_write_scope() {
     case "$path" in
       .env|.env.*|.secret|.secret.*|*/.env|*/.env.*|*/.secret|*/.secret.*)
         offenders+=("$path"); continue ;;
-      node_modules/*|*/node_modules/*) offenders+=("$path"); continue ;;
-      .git/*|*/.git/*)                  offenders+=("$path"); continue ;;
-      dist/*|coverage/*|playwright-report/*|test-results/*)
-        offenders+=("$path"); continue ;;
-      src/*|apps/*|tests/*|e2e/*|docs/*|.taskmaster/*|scripts/*|shared/*|server/*|public/*|plugins/*)
-        continue ;;
-      *) continue ;;  # top-level dotfile-clean path tolerated
+      .git/index|*/.git/index|.git/index.lock|*/.git/index.lock) continue ;;
+      node_modules/*|*/node_modules/*|.git/*|*/.git/*) offenders+=("$path"); continue ;;
+      build/*|*/build/*|target/*|*/target/*|dist/*|*/dist/*|.gradle/*|*/.gradle/*|.next/*|*/.next/*|.nuxt/*|*/.nuxt/*|.turbo/*|*/.turbo/*|.vite/*|*/.vite/*) continue ;;
+      *.db-shm|*.db-wal|*.sqlite-shm|*.sqlite-wal|*.sqlite3-shm|*.sqlite3-wal) continue ;;
+      coverage/*|*/coverage/*|playwright-report/*|*/playwright-report/*|test-results/*|*/test-results/*) offenders+=("$path"); continue ;;
+      src/*|apps/*|tests/*|e2e/*|docs/*|.taskmaster/*|scripts/*|shared/*|server/*|public/*|plugins/*) continue ;;
+      *) continue ;;  # other paths remain outside this blacklist
     esac
   done
   if [ "${#offenders[@]}" -gt 0 ]; then
@@ -382,7 +382,7 @@ check_write_scope() {
 }
 ```
 
-Invoked after the writer finishes, before review prompt build. Failure here forces a review-fail with reason `scope:violation`.
+Post-write scope checks inspect the uncapped discovered-path list before idle/error retry routing and after feedback retries, including failed attempts. A violation blocks further review and automatic checkpoints with `scope:violation`; an initial nonzero writer status is preserved. Progress display stays capped at 80 paths. Existing blacklist exemptions, pruning/mtime filters and task-state rules remain; this check provides no rollback or read isolation.
 
 #### `parse_review.py` — required review JSON fields
 
@@ -1031,7 +1031,7 @@ source-install release. Hosted docs are already published at
 - [x] Zero `python3 - <<'PY'` heredocs _(all extracted in P2)_
 - [x] No `python3 -c` invocations longer than 80 chars _(all consolidated in P2-2)_
 - [x] No duplicated writer/reviewer engine paths _(unified `run_ai_turn` in `lib/engines.sh`)_
-- [x] All bash modules ≤ 600 LOC _(largest: `lib/help.sh` at 598 LOC; tied with `lib/team.sh`; verified by `wc -l lib/*.sh`)_
+- [x] All bash modules ≤ 600 LOC _(largest: `lib/wave_loop.sh` at 600 LOC; verified by `wc -l lib/*.sh`)_
 
 ### Tests
 
@@ -1051,7 +1051,7 @@ source-install release. Hosted docs are already published at
 - [x] No hardcoded user paths _(verified by `py/tests/test_no_hardcoded_paths.py`)_
   - 2026-05-03 portability hardening: the guard now scans the current standalone release tree (`mainspring.sh`, `lib/`, `py/`, `tests/`, `docs/`, `method/`, packaging metadata, and generated docs assets) instead of stale pre-extraction roots, and `docs/assets/hud-demo.cast` no longer embeds an absolute local user-home PRD path.
 - [x] `flock`-based concurrency _(verified by `py/tests/test_fd_lock.py` + `tests/bats/test_lock.bats`)_
-- [x] Write-scope whitelist enforced; `.env*` / `node_modules` / `.git` always rejected _(verified by `tests/bats/test_write_scope.bats`)_
+- [x] Post-write blacklist checked on discovered paths; secret, dependency and report paths are rejected with existing generated-output and git-index exceptions _(verified by the original and native write-scope Bats tests)_
 - [x] Destructive ops require explicit `--restart-team` / `--repair-state --force` _(automatic team preflight now refuses worktree/state cleanup without `--restart-team`; stale process cleanup and state repair require `--force`; verified by `tests/bats/test_team.bats`, `py/tests/test_runtime_state.py`, shellcheck, and `bash -n`)_
 
 ### UX
