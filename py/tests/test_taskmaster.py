@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import io
 import json
+import os
 import subprocess
 import sys
 from contextlib import redirect_stderr, redirect_stdout
@@ -47,6 +48,212 @@ def _write_tagged_tasks(
 
 def _missing_default_tasks_file(tmp_path: Path) -> str:
     return str(tmp_path / ".taskmaster" / "tasks" / "tasks.json")
+
+
+def _capture_readiness_command(command: str, tasks_file: str) -> tuple[int | None, str]:
+    handlers = {
+        "next": taskmaster.cmd_next,
+        "status-summary": taskmaster.cmd_status_summary,
+        "scope-summary": taskmaster.cmd_scope_summary,
+        "fallback-next": taskmaster.cmd_fallback_next,
+        "collect-parallel": taskmaster.cmd_collect_parallel,
+        "team-skip-reason": taskmaster.cmd_team_skip_reason,
+    }
+    output = io.StringIO()
+    before = Path(tasks_file).read_bytes()
+    with redirect_stdout(output):
+        result = handlers[command](tasks_file)
+    assert Path(tasks_file).read_bytes() == before
+    return result, output.getvalue()
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "next",
+        "status-summary",
+        "scope-summary",
+        "fallback-next",
+        "collect-parallel",
+        "team-skip-reason",
+    ],
+)
+@pytest.mark.parametrize(
+    "dependencies",
+    ["12", "", False, True, 0, 12, {}, {"1": "done", "2": "done"}],
+)
+def test_readiness_commands_reject_non_array_dependencies(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    command: str,
+    dependencies: object,
+) -> None:
+    monkeypatch.setenv("MAINSPRING_TASKMASTER_TAG", "master")
+    monkeypatch.setenv("MAINSPRING_TEAM_EXCLUDE_PREFIXES", "")
+    target = {
+        "id": 20,
+        "status": "in-progress",
+        "title": "Dependent",
+        "details": ".claude/hidden.py"
+        if command == "team-skip-reason"
+        else "src/dependent.py",
+        "dependencies": [12],
+    }
+    tasks = [
+        {"id": 1, "status": "done"},
+        {"id": 2, "status": "done"},
+        {
+            "id": 12,
+            "status": "pending",
+            "dependencies": [],
+            "details": "src/prerequisite.py",
+        },
+        target,
+    ]
+    path = _write_tasks(tmp_path, tasks)
+    control = _capture_readiness_command(command, path)
+    if command == "next":
+        assert control == (0, "12\n")
+    elif command == "collect-parallel":
+        assert [json.loads(line)["id"] for line in control[1].splitlines()] == ["12"]
+    elif command == "team-skip-reason":
+        assert control[1].strip() == ""
+    target["dependencies"] = dependencies
+    _write_tasks(tmp_path, tasks)
+
+    assert _capture_readiness_command(command, path) == control
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "next",
+        "status-summary",
+        "scope-summary",
+        "fallback-next",
+        "collect-parallel",
+        "team-skip-reason",
+    ],
+)
+@pytest.mark.parametrize("shape", ["missing", "null", "empty"])
+def test_readiness_commands_preserve_optional_dependency_collections(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    command: str,
+    shape: str,
+) -> None:
+    monkeypatch.setenv("MAINSPRING_TASKMASTER_TAG", "master")
+    monkeypatch.setenv("MAINSPRING_TEAM_EXCLUDE_PREFIXES", "")
+    target = {
+        "id": 20,
+        "status": "in-progress",
+        "details": ".claude/hidden.py"
+        if command == "team-skip-reason"
+        else "src/dependent.py",
+        "dependencies": [],
+    }
+    tasks = [{"id": 12, "status": "pending", "details": "src/prerequisite.py"}, target]
+    path = _write_tasks(tmp_path, tasks)
+    control = _capture_readiness_command(command, path)
+    if command == "next":
+        assert control == (0, "20\n")
+    if shape == "missing":
+        del target["dependencies"]
+    elif shape == "null":
+        target["dependencies"] = None
+    _write_tasks(tmp_path, tasks)
+
+    assert _capture_readiness_command(command, path) == control
+
+
+@pytest.mark.parametrize("subtask", [False, True])
+@pytest.mark.parametrize("shape", ["scalar", "array", "null", "missing", "empty"])
+def test_public_next_rejects_scalar_dependencies_before_prd_priority(
+    tmp_path: Path,
+    subtask: bool,
+    shape: str,
+) -> None:
+    prerequisite = {
+        "id": 12,
+        "status": "pending",
+        "title": "P2 prerequisite",
+        "dependencies": [],
+    }
+    target = {
+        "id": 20,
+        "status": "pending",
+        "title": "P1 dependent",
+        "dependencies": [],
+    }
+    if shape == "scalar":
+        target["dependencies"] = "12"
+    elif shape == "array":
+        target["dependencies"] = [12]
+    elif shape == "null":
+        target["dependencies"] = None
+    elif shape == "missing":
+        del target["dependencies"]
+    if subtask:
+        target["id"] = 13
+        tasks = [
+            {
+                "id": 20,
+                "status": "pending",
+                "subtasks": [
+                    {"id": 1, "status": "done"},
+                    {"id": 2, "status": "done"},
+                    prerequisite,
+                    target,
+                ],
+            }
+        ]
+        expected = "20.12" if shape in {"scalar", "array"} else "20.13"
+    else:
+        tasks = [
+            {"id": 1, "status": "done"},
+            {"id": 2, "status": "done"},
+            prerequisite,
+            target,
+        ]
+        expected = "12" if shape in {"scalar", "array"} else "20"
+    path = _write_tasks(tmp_path, tasks)
+    active = tmp_path / "active-prd.json"
+    active.write_text(json.dumps({"active_phase": "P1", "phase_order": ["P1", "P2"]}))
+    runtime = tmp_path / ".mainspring"
+    protected = {key: os.environ.get(key) for key in ("HOME", "home", "CODEX_HOME")}
+    env = {
+        **os.environ,
+        "MAINSPRING_PY": sys.executable,
+        "MAINSPRING_RUNTIME_PYTHON": sys.executable,
+        "MAINSPRING_TASKMASTER_TAG": "master",
+        "MAINSPRING_RUNTIME_DIR": str(runtime),
+        "MAINSPRING_STATE_DIR": str(runtime / "state"),
+    }
+    before = Path(path).read_bytes()
+
+    result = subprocess.run(
+        [
+            "/bin/bash",
+            str(HERE.parent.parent / "mainspring.sh"),
+            "--project",
+            str(tmp_path),
+            "next",
+            path,
+            "--active-prd",
+            str(active),
+        ],
+        cwd=tmp_path,
+        env=env,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == expected
+    assert Path(path).read_bytes() == before
+    assert {key: os.environ.get(key) for key in protected} == protected
 
 
 # ── status-summary ─────────────────────────────────────────────────────

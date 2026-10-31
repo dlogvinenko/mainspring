@@ -152,6 +152,11 @@ These commands shape the backlog before autonomous work starts.
 | Audit task shape | `mainspring scope-check` | Requires a Taskmaster backlog; checks the default backlog for Method issues. |
 | Audit task file | `mainspring scope-check path/to/tasks.json` | Check a specific Taskmaster backlog. |
 
+Taskmaster dependency collections must be JSON arrays when present and non-null.
+Malformed task or subtask collections do not establish readiness. Missing/null
+fields and empty arrays keep their no-prerequisite behavior; existing `done`
+checks and identifier matching are unchanged.
+
 When no backlog exists, Mainspring does not guess: missing backlog prints
 `mainspring init checkout-redesign` guidance so the operator can start from a
 Product Requirements Document (PRD) with a concrete copy/paste example.

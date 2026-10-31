@@ -1263,8 +1263,8 @@ truth. It is intentionally a map, not a second implementation plan.
 - `lib/help.sh` is the public help contract. Any new command or flag needs
   help text plus Bats coverage before it is documented elsewhere.
 - `lib/cli.sh` is the argument parser. Public command spelling lives there.
-- `docs/guide.md` is the human-facing command reference. Its command tables
-  group command families with complete runnable variants, not detached flags.
+- `docs/guide.md` is the human-facing command reference. Its command tables group command families with complete runnable variants, not detached flags.
+- Taskmaster dependency collections must be arrays when present and non-null. Malformed collections do not establish readiness; missing/null fields and empty arrays remain no prerequisites. Existing `done` checks and identifier matching stay unchanged in `py/backlog_source.py` and `py/taskmaster.py`.
 
 ### Runtime and logs
 

@@ -141,13 +141,26 @@ def _dep_done(dep_id: str, by_id: dict[str, dict]) -> bool:
     return bool(task and task.get("status") == "done")
 
 
+def _task_deps_done(task: dict, by_id: dict[str, dict]) -> bool:
+    dependencies = task.get("dependencies")
+    return dependencies is None or (
+        isinstance(dependencies, list)
+        and all(_dep_done(dep, by_id) for dep in dependencies)
+    )
+
+
 def _sub_deps_done(task: dict, sub: dict) -> bool:
+    dependencies = sub.get("dependencies", [])
+    if dependencies is None:
+        dependencies = []
+    if not isinstance(dependencies, list):
+        return False
     done = {
         str(s.get("id"))
         for s in task.get("subtasks", []) or []
         if s.get("status") == "done"
     }
-    return all(str(dep) in done for dep in sub.get("dependencies", []) or [])
+    return all(str(dep) in done for dep in dependencies)
 
 
 def _find_task_item(tasks_file: str, target_id: str) -> dict | None:
@@ -344,7 +357,7 @@ def cmd_status_summary(tasks_file: str) -> None:
         status = str(task.get("status") or "")
         if status not in {"pending", "in-progress", "review"}:
             continue
-        if not all(_dep_done(dep, by_id) for dep in task.get("dependencies", []) or []):
+        if not _task_deps_done(task, by_id):
             continue
         candidates.append((_rank(status), int(task.get("id") or 0), task))
 
@@ -444,7 +457,7 @@ def cmd_scope_summary(tasks_file: str, plugins_ignored: bool = False) -> None:
         status = str(task.get("status") or "")
         if status not in {"pending", "in-progress", "review"}:
             continue
-        if all(_dep_done(dep, by_id) for dep in task.get("dependencies", []) or []):
+        if _task_deps_done(task, by_id):
             parents.append((_rank(status), int(task.get("id") or 0), task))
 
     if not parents:
@@ -577,7 +590,7 @@ def cmd_next(tasks_file: str, active_prd_file: str | None = None) -> int:
         task_status = str(task.get("status") or "")
         if task_status not in ("pending", "in-progress", "review"):
             continue
-        if not all(_dep_done(dep, by_id) for dep in task.get("dependencies", []) or []):
+        if not _task_deps_done(task, by_id):
             continue
 
         parent_id = _int_or_zero(task.get("id"))
@@ -632,8 +645,7 @@ def cmd_fallback_next(tasks_file: str) -> None:
     for task in tasks:
         if task.get("status") not in ("pending", "in-progress", "review"):
             continue
-        deps = [str(d) for d in task.get("dependencies", [])]
-        if not all(_dep_done(d, by_id) for d in deps):
+        if not _task_deps_done(task, by_id):
             continue
         subs = task.get("subtasks", []) or []
         if subs:
@@ -661,9 +673,6 @@ def cmd_collect_parallel(tasks_file: str, limit: int = 4) -> None:
     limit = max(1, min(6, limit))
     tasks = _load_tasks(tasks_file)
     by_id = {str(t.get("id")): t for t in tasks}
-
-    def task_deps_done(task: dict) -> bool:
-        return all(_dep_done(dep, by_id) for dep in task.get("dependencies", []) or [])
 
     def extracted_scope(task: dict, sub: dict | None = None) -> list[str]:
         text = _task_scope_text(task, sub)
@@ -698,7 +707,7 @@ def cmd_collect_parallel(tasks_file: str, limit: int = 4) -> None:
         task_status = task.get("status")
         if task_status not in ("pending", "in-progress", "review"):
             continue
-        if not task_deps_done(task):
+        if not _task_deps_done(task, by_id):
             continue
 
         parent_id = str(task.get("id"))
@@ -758,13 +767,10 @@ def cmd_team_skip_reason(tasks_file: str) -> None:
     tasks = _load_tasks(tasks_file)
     by_id = {str(t.get("id")): t for t in tasks}
 
-    def task_deps_done(task: dict) -> bool:
-        return all(_dep_done(dep, by_id) for dep in task.get("dependencies", []) or [])
-
     for task in tasks:
         if task.get("status") not in ("pending", "in-progress", "review"):
             continue
-        if not task_deps_done(task):
+        if not _task_deps_done(task, by_id):
             continue
 
         subtasks = task.get("subtasks", []) or []

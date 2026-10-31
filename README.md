@@ -102,7 +102,7 @@ normal first-run path.
 | Live dashboard | `mainspring hud` | See every live Mainspring work process on the machine: folder, PID, tag, task, wave, pass/fail state, notifier health, and team state. |
 | Telegram alerts | `mainspring notify-test` | After the test passes, set `MAINSPRING_NOTIFY_ENABLED=1` before a run to get project/folder/tag-aware messages for failures, retry loops, loop stops, quota, stuck teams, milestones, and daily digest. |
 | Safe smoke run | `mainspring --preset fast-smoke --dry-run` | Preview commands with zero API calls and no file mutation. |
-| One reviewed wave | `mainspring taskmaster --once` | Take one ready Taskmaster item through writer/reviewer verification. |
+| One reviewed wave | `mainspring taskmaster --once` | Take one ready Taskmaster item through writer/reviewer verification. Malformed dependency collections do not establish readiness; missing/null fields and empty arrays keep their no-prerequisite behavior. |
 | PRD-driven work | `mainspring night --prd docs/prd.md --once` | Let the Product Requirements Document (PRD) select the next useful slice. |
 | Metrics | `mainspring --metrics --days 7 --routing` | Read pass rate, duration, routing, cost, and stuck-task signals for the last week. |
 | Replay | `mainspring replay show last .mainspring/logs/waves.jsonl` | Inspect past waves without trusting memory or terminal scrollback. Replay children use controls from the current source and invocation, including `--save-as`; inherited replay leftovers are ignored without changing the caller or unrelated runtime settings. |

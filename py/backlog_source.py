@@ -81,12 +81,17 @@ def _dep_done(dep_id: str, by_id: dict[str, dict]) -> bool:
 
 
 def _sub_deps_done(task: dict, sub: dict) -> bool:
+    dependencies = sub.get("dependencies", [])
+    if dependencies is None:
+        dependencies = []
+    if not isinstance(dependencies, list):
+        return False
     done = {
         str(s.get("id"))
         for s in task.get("subtasks", []) or []
         if s.get("status") == "done"
     }
-    return all(str(dep) in done for dep in sub.get("dependencies", []) or [])
+    return all(str(dep) in done for dep in dependencies)
 
 
 def _item_text(task: dict, sub: dict | None = None) -> str:
@@ -210,8 +215,12 @@ class TaskmasterJsonBacklogSource:
             task_status = str(task.get("status") or "")
             if task_status not in ACTIONABLE_STATUSES:
                 continue
-            deps = task.get("dependencies", []) or []
-            if not all(_dep_done(dep, by_id) for dep in deps):
+            deps = task.get("dependencies", [])
+            if deps is None:
+                deps = []
+            if not isinstance(deps, list) or not all(
+                _dep_done(dep, by_id) for dep in deps
+            ):
                 continue
 
             parent_id = _int_or_zero(task.get("id"))
