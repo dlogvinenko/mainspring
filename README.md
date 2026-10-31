@@ -260,7 +260,7 @@ Full surface: `mainspring help --full` and [`docs/guide.md`](docs/guide.md).
 
 | Document | Use it for |
 | --- | --- |
-| [`docs/guide.md`](docs/guide.md) | Operator commands, HUD, Telegram, recovery, modes. |
+| [`docs/guide.md`](docs/guide.md) | Operator commands, HUD, Telegram, recovery, modes. Docs-site builds protect canonical document inputs before writing or cleanup. |
 | [`docs/method.md`](docs/method.md) | The Product Requirements Document (PRD)-first Method and why it beats unstructured vibe coding for production work. |
 | [`docs/competitive-analysis.md`](docs/competitive-analysis.md) | Market map, 1000-point release score, fit matrix, and positioning strategy. |
 | [`docs/metrics.md`](docs/metrics.md) | Wave ledger JSONL fields and metrics semantics. |

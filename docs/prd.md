@@ -1264,6 +1264,7 @@ truth. It is intentionally a map, not a second implementation plan.
 - PRD validation uses live headings, ADRs, truth tables and lanes, not fenced examples. Required ADR fields need nonblank value blocks, including multiline prose or code; short truth data rows without Source are reported. A heading-only Won't lane remains allowed. Passing is structural validation, not business or approval readiness.
 - `lib/cli.sh` is the argument parser. Public command spelling lives there.
 - `docs/guide.md` is the human-facing command reference. Its command tables group command families with complete runnable variants, not detached flags.
+- `py/docs_site.py` protects canonical input paths before writes or cleanup; incremental writes also reject source file aliases. Marked rebuilds can unlink output symlinks safely, and unmarked incremental builds keep unrelated custom assets.
 - Taskmaster dependency collections must be arrays when present and non-null. Malformed collections do not establish readiness; missing/null fields and empty arrays remain no prerequisites. Existing `done` checks and identifier matching stay unchanged in `py/backlog_source.py` and `py/taskmaster.py`.
 
 ### Runtime and logs
@@ -1287,8 +1288,7 @@ truth. It is intentionally a map, not a second implementation plan.
 ### Review and safety gates
 
 - `lib/review.sh` applies the hard gate; a nonzero parser exit rejects even without output.
-- `py/parse_review.py` treats JSON containers and booleans in known text fields as missing evidence.
-  Numeric score/delta rules, JSON priority, Markdown fallback and duplicate-key policy are unchanged.
+- `py/parse_review.py` treats JSON containers and booleans in known text fields as missing evidence. Numeric score/delta rules, JSON priority, Markdown fallback and duplicate-key policy are unchanged.
 - `lib/write_scope.sh` protects the operator's checkout from forbidden path
   changes and generated-output noise.
 

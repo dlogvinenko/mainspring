@@ -577,6 +577,14 @@ mainspring notify-test
 after validating that the process belongs to this runtime's ledger. Avoid broad
 process-name kills; they can kill another project's notifier.
 
+## Docs Site Maintenance
+
+The docs-site generator checks canonical document inputs before output writes
+or cleanup. Incremental writes reject symbolic or hard-link aliases to those
+inputs. Marked generated output can still be rebuilt, including removing output
+symlinks without changing source targets. Unmarked incremental output keeps
+unrelated custom assets.
+
 ## Known Non-Product Inputs
 
 Manual credentials, production keys, live deployment, legal copy, and store
