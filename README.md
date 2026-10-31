@@ -41,8 +41,8 @@ survive an update. Provider installs require patched filelock and may select an
 earlier allowed LiteLLM: `MAINSPRING_PROVIDERS_PYTHON=python3.13 make install-user-providers` (Python 3.11-3.13).
 
 Source checkouts can also run `./mainspring.sh --project /path/to/your-project`.
-The packaged `mainspring` command uses its own pipx Python, so a project's
-`.venv` cannot downgrade the HUD or hide Rich UI support. The v1 install path
+The packaged `mainspring` command uses its pipx Python; a project's `.venv` cannot hide HUD dependencies.
+Optional `fnm` bootstrap discards failed helper output and keeps the existing directory fallback. The v1 install path
 is source install until package-manager channels are actually published.
 
 ## Why It Exists

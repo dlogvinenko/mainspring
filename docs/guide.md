@@ -74,6 +74,11 @@ LiteLLM release while newer releases cap filelock below 4. Python 3.14 keeps
 the Rich-only base runtime. Isolated install/import/mock checks do not verify
 real provider credentials, inference or downloaded model assets.
 
+Optional `fnm` bootstrap applies only allowlisted assignments from a successful
+JSON helper. Helper failure discards its entire output and uses the existing
+first-directory fallback. Successful-helper string cleanup, directory checks
+and handling of the producer's exit status remain unchanged.
+
 ## Everyday Commands
 
 These are the commands most operators need day to day.

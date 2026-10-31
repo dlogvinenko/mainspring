@@ -161,7 +161,15 @@ mainspring_load_fnm_env_json() {
   command -v fnm >/dev/null 2>&1 || return 1
   command -v python3 >/dev/null 2>&1 || return 1
 
-  local fnm_line fnm_key fnm_value fnm_loaded=false
+  local fnm_line fnm_key fnm_value fnm_output fnm_loaded=false
+  fnm_output="$(
+    if fnm env --json 2>/dev/null | python3 "$MAINSPRING_PY_DIR/fnm_env.py"; then
+      exit 0
+    else
+      # The helper is the second pipeline entry; its failure rejects all output.
+      exit "${PIPESTATUS[1]}"
+    fi
+  )" || return 1
   while IFS= read -r fnm_line; do
     fnm_key="${fnm_line%%=*}"
     fnm_value="${fnm_line#*=}"
@@ -174,7 +182,7 @@ mainspring_load_fnm_env_json() {
         export "$fnm_key=$fnm_value"
         ;;
     esac
-  done < <(fnm env --json 2>/dev/null | python3 "$MAINSPRING_PY_DIR/fnm_env.py")
+  done <<< "$fnm_output"
   [ "$fnm_loaded" = true ]
 }
 
