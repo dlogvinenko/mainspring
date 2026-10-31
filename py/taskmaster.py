@@ -681,7 +681,7 @@ def cmd_collect_parallel(tasks_file: str, limit: int = 4) -> None:
         text = _task_scope_text(task, sub)
         paths = set(
             re.findall(
-                r"(?:(?:apps|src|server|tests|docs|scripts|plugins)/[A-Za-z0-9_./@+-]+)",
+                r"(?<![\w./@+-])(?:\./)*((?:apps|src|server|tests|docs|scripts|plugins)/[A-Za-z0-9_./@+-]+)",
                 text,
             )
         )
