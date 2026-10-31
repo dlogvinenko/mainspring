@@ -202,8 +202,8 @@ Registered engine keys: `claude`, `codex`, `anthropic`, `openai`, `azure`,
 Engine paths fail closed and never silently fall back to another provider, model or reviewer. Structured Claude quota failures require engine error or rejection evidence.
 Task prose about quotas does not itself mean usage is exhausted. Quota snapshots report malformed numeric or nested data as unknown.
 
-Use `mainspring engines` to inspect setup gaps before a run. Use `mainspring limits` before long unattended work:
-`ready` means runnable plus quota/readiness signal; `adapter-only` means credentials or quota are not proven by that offline snapshot.
+Use `mainspring engines` for setup gaps and `mainspring limits` before long work: `ready` needs a runnable adapter plus local data.
+A source label alone leaves `adapter-only`; credentials or quota remain unproved by that offline snapshot.
 
 ### Local Model Writer
 

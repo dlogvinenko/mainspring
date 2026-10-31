@@ -101,8 +101,7 @@ def _format_reset(value: object, now: datetime) -> str:
 
 
 def _quota_has_signal(quota: dict) -> bool:
-    if str(quota.get("source") or "missing") != "missing":
-        return True
+    # Provenance alone does not establish observed quota or readiness data.
     if str(quota.get("status") or "unknown") != "unknown":
         return True
     if str(quota.get("plan") or "unknown") != "unknown":
