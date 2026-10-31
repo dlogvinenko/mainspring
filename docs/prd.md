@@ -83,9 +83,9 @@ they were not revalidated as current results in this draft.
 | Source shell syntax                     | passes                                             | `bash -n mainspring.sh lib/*.sh`                         |
 | Source shell lint                       | passes                                             | `shellcheck -S warning mainspring.sh lib/*.sh`           |
 | Python lint                             | 410 baseline findings, zero additions                | Ruff 0.17.3 comparison with public `4d365cc` on 2026-10-30 |
-| Python format                           | passes, 106 files already formatted                 | `ruff format --check py`                                 |
+| Python format                           | passes, 107 files already formatted                 | `ruff format --check py`                                 |
 | Active embedded Python in shell paths   | 0 heredoc / inline-parser hits                     | `rg` scan for `python3 - <<` and `python3 -c` in shell    |
-| Pytest suite files                      | 56                                                 | `find py/tests -name 'test_*.py'` plus count             |
+| Pytest suite files                      | 57                                                 | `find py/tests -name 'test_*.py'` plus count             |
 | Bats suite files                        | 14                                                 | `find tests/bats -name '*.bats'` plus count              |
 | Python line coverage                    | 90.6% (coverage gate pass)                         | `make coverage` on 2026-06-16                           |
 | Full local gate                         | blocked: 1149 Python tests passed, 1 skipped; 223 Bats passed (doctor fixtures isolate inherited interpreter overrides); HUD/docs-site and package smoke pass; 410 baseline Ruff findings; known filelock findings resolved in the validated public dependency graphs | separate local gates on 2026-10-30; `make all` stops at baseline lint |
@@ -1263,6 +1263,7 @@ truth. It is intentionally a map, not a second implementation plan.
 - `lib/help.sh` is the public help contract. Any new command or flag needs help text plus Bats coverage before it is documented elsewhere.
 - PRD validation uses live headings, ADRs, truth tables and lanes, not fenced examples. Required ADR fields need nonblank value blocks, including multiline prose or code; short truth data rows without Source are reported. A heading-only Won't lane remains allowed. Passing is structural validation, not business or approval readiness.
 - `lib/cli.sh` is the argument parser. Public command spelling lives there.
+- `py/prd_brief.py` honors explicit nonnegative Python-character budgets below 32 with the fitting prefix of its existing truncation marker when needed. Already-fitting summaries, normal/default output and the CLI's 6000 default stay unchanged; no new minimum, negative-budget, type or path policy is added.
 - `docs/guide.md` is the human-facing command reference. Its command tables group command families with complete runnable variants, not detached flags.
 - `py/docs_site.py` protects canonical input paths before writes or cleanup; incremental writes also reject source file aliases. Marked rebuilds can unlink output symlinks safely, and unmarked incremental builds keep unrelated custom assets.
 - Taskmaster dependency collections must be arrays when present and non-null. Malformed collections do not establish readiness; missing/null fields and empty arrays remain no prerequisites. Existing `done` checks and identifier matching stay unchanged in `py/backlog_source.py` and `py/taskmaster.py`.
@@ -1282,8 +1283,7 @@ truth. It is intentionally a map, not a second implementation plan.
 
 - `py/hud.py` owns global/local HUD rendering, progress estimation, and clean interrupt behavior.
 - `py/engine_quota.py` keeps malformed numeric/nested evidence unknown; remaining percentages must be finite 0..100, and booleans are not measurements. Binary availability, status, source/reset metadata, legacy used-over-100 saturation at zero and numeric precision are unchanged. In `py/limits.py`, source labels alone remain provenance, not quota/readiness evidence, so a runnable adapter without other data is adapter-only. Existing status, plan, percentage/reset signals and setup/throttling precedence stay unchanged.
-- `py/notify_telegram.py` owns Telegram event selection, deduplication,
-  project/folder/tag context, and loop-stopped alerts.
+- `py/notify_telegram.py` owns Telegram event selection, deduplication, project/folder/tag context, and loop-stopped alerts.
 - `lib/notify.sh` owns only daemon lifecycle and recorded-PID validation.
   Broad process-name kills are not an acceptable recovery path.
 

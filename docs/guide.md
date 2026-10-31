@@ -414,6 +414,12 @@ then says `Status: READY`, the writer/reviewer routing works. For multi-wave or
 team runs, start with `--topology solo` first because many local servers are
 tuned for one active request.
 
+Direct Python callers of `build_brief(prd_path, max_chars=6000)` can set a
+character limit. For a nonnegative limit below 32, an oversized summary becomes
+the fitting prefix of the existing truncation marker (empty at zero).
+Already-fitting summaries and normal/default output stay unchanged.
+The CLI still uses 6000; this adds no CLI budget flag.
+
 ## Team Safety Rules
 
 In team mode, Mainspring adds a routing label to each dispatched backlog item so

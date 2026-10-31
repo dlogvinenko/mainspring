@@ -84,7 +84,10 @@ def build_brief(prd_path: str, max_chars: int = 6000) -> str:
 
     summary = "\n".join(summary_parts)
     if len(summary) > max_chars:
-        summary = summary[: max_chars - 32].rstrip() + "\n... [truncated]"
+        if 0 <= max_chars < 32:
+            summary = "\n... [truncated]"[:max_chars]
+        else:
+            summary = summary[: max_chars - 32].rstrip() + "\n... [truncated]"
     return summary
 
 
