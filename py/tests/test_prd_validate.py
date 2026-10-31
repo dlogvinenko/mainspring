@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -313,3 +315,190 @@ def test_cli_usage_and_error_paths(
     assert result.returncode == returncode
     output = result.stderr if stream == "stderr" else result.stdout
     assert snippet in output
+
+
+# Fenced examples are content, not live document or ADR structure.
+def _adr_block(text: str) -> str:
+    start = text.index("### ADR-01: Pick a license")
+    return text[start : text.index("## Operational doctrine", start)].rstrip() + "\n"
+
+
+@pytest.mark.parametrize("marker", ["```markdown", "~~~markdown"])
+def test_fenced_document_does_not_supply_required_sections(marker: str) -> None:
+    close = marker[:3]
+    text = marker + "\n" + _valid_prd() + close + "\n"
+    issues = prd_validate.validate_text(text)
+    assert any(
+        issue.code == "section:missing" and "Mission" in issue.message
+        for issue in issues
+    )
+
+
+@pytest.mark.parametrize("marker", ["```markdown", "~~~markdown"])
+def test_fenced_adr_example_does_not_supply_a_decision(marker: str) -> None:
+    block = _adr_block(_valid_prd())
+    text = _valid_prd().replace(
+        block, "Example only:\n\n" + marker + "\n" + block + marker[:3] + "\n"
+    )
+    assert any(issue.code == "adr:none" for issue in prd_validate.validate_text(text))
+
+
+@pytest.mark.parametrize("marker", ["```markdown", "~~~markdown"])
+def test_fenced_adr_labels_do_not_supply_required_fields(marker: str) -> None:
+    block = _adr_block(_valid_prd())
+    heading, body = block.split("\n", 1)
+    replacement = heading + "\n\n" + marker + "\n" + body + marker[:3] + "\n"
+    text = _valid_prd().replace(block, replacement)
+    issues = prd_validate.validate_text(text)
+    assert any(
+        issue.code == "adr:missing_fields" and "Decision" in issue.message
+        for issue in issues
+    )
+
+
+@pytest.mark.parametrize("marker", ["```markdown", "~~~markdown"])
+def test_fenced_wont_example_does_not_supply_a_backlog_lane(marker: str) -> None:
+    text = _valid_prd()
+    start = text.index("### Won't")
+    end = text.index("## Appendix A", start)
+    lane = text[start:end]
+    text = text[:start] + marker + "\n" + lane + marker[:3] + "\n\n" + text[end:]
+    assert any(
+        issue.code == "backlog:wont_missing"
+        for issue in prd_validate.validate_text(text)
+    )
+
+
+@pytest.mark.parametrize("marker", ["```markdown", "~~~markdown"])
+def test_fenced_truth_table_does_not_supply_verified_sources(marker: str) -> None:
+    table = "| Metric | Value | Source |\n| --- | --- | --- |\n| Main LOC | 10 | `wc -l scripts/main.sh` |"
+    text = _valid_prd().replace(table, marker + "\n" + table + "\n" + marker[:3])
+    assert any(
+        issue.code == "truth:source_table_missing"
+        for issue in prd_validate.validate_text(text)
+    )
+
+
+@pytest.mark.parametrize("field", prd_validate.ADR_FIELDS)
+@pytest.mark.parametrize("blank", ["", " \t"])
+def test_blank_adr_field_value_is_missing(field: str, blank: str) -> None:
+    text = re.sub(
+        r"(?m)^\*\*" + re.escape(field) + r":\*\*[^\n]*",
+        "**" + field + ":**" + blank,
+        _valid_prd(),
+    )
+    issues = prd_validate.validate_text(text)
+    assert any(
+        issue.code == "adr:missing_fields" and field in issue.message
+        for issue in issues
+    )
+
+
+@pytest.mark.parametrize("field", prd_validate.ADR_FIELDS)
+def test_multiline_adr_values_remain_valid(field: str) -> None:
+    text = re.sub(
+        r"(?m)^(\*\*" + re.escape(field) + r":\*\*) (.+)$", r"\1\n\n\2", _valid_prd()
+    )
+    assert prd_validate.validate_text(text) == []
+
+
+def test_empty_last_adr_field_cannot_borrow_a_section_separator() -> None:
+    text = _valid_prd().replace("**Reversal cost:** high.", "**Reversal cost:**\n\n---")
+    assert any(
+        issue.code == "adr:missing_fields" and "Reversal cost" in issue.message
+        for issue in prd_validate.validate_text(text)
+    )
+
+
+def test_adr_value_may_be_a_code_block_without_becoming_structure() -> None:
+    text = _valid_prd().replace(
+        "**Decision:** Apache-2.0.", "**Decision:**\n\n```text\nApache-2.0.\n```"
+    )
+    assert prd_validate.validate_text(text) == []
+
+
+@pytest.mark.parametrize("before", [False, True])
+def test_short_truth_row_reports_its_missing_source(before: bool) -> None:
+    good = "| Main LOC | 10 | `wc -l scripts/main.sh` |"
+    short = "| Disk usage | 4 GB |"
+    text = _valid_prd().replace(
+        good, short + "\n" + good if before else good + "\n" + short
+    )
+    issues = prd_validate.validate_text(text)
+    assert any(
+        issue.code == "truth:source_missing" and "Disk usage" in issue.message
+        for issue in issues
+    )
+
+
+@pytest.mark.parametrize(
+    ("opening", "false_close", "close"),
+    [
+        ("````markdown", "```", "````"),
+        ("```markdown", "~~~", "```"),
+        ("~~~markdown", "```", "~~~"),
+        ("   ~~~markdown", "   ~~~still-code", "   ~~~"),
+    ],
+)
+def test_fence_closing_character_width_and_suffix_are_respected(
+    opening: str, false_close: str, close: str
+) -> None:
+    block = _adr_block(_valid_prd())
+    replacement = opening + "\nExample.\n" + false_close + "\n" + block + close + "\n"
+    text = _valid_prd().replace(block, replacement)
+    assert any(issue.code == "adr:none" for issue in prd_validate.validate_text(text))
+
+
+def test_fenced_examples_do_not_relax_the_existing_placeholder_check() -> None:
+    text = _valid_prd() + "\n```text\n{{fenced-template}}\n```\n"
+    assert any(
+        issue.code == "placeholder:unresolved"
+        for issue in prd_validate.validate_text(text)
+    )
+
+
+@pytest.mark.parametrize(
+    ("case", "code"),
+    [
+        ("fenced-adr", "adr:none"),
+        ("empty-decision", "adr:missing_fields"),
+        ("short-truth", "truth:source_missing"),
+    ],
+)
+def test_cli_rejects_incomplete_structures_with_json(
+    case: str, code: str, tmp_path: Path
+) -> None:
+    text = _valid_prd()
+    if case == "fenced-adr":
+        block = _adr_block(text)
+        text = text.replace(block, "```markdown\n" + block + "```\n")
+    elif case == "empty-decision":
+        text = text.replace("**Decision:** Apache-2.0.", "**Decision:**")
+    else:
+        good = "| Main LOC | 10 | `wc -l scripts/main.sh` |"
+        text = text.replace(good, good + "\n| Disk usage | 4 GB |")
+    prd = tmp_path / "synthetic-prd.md"
+    prd.write_text(text)
+    result = subprocess.run(
+        [sys.executable, SCRIPT, str(prd), "--format", "json"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 1
+    assert any(issue["code"] == code for issue in json.loads(result.stdout))
+
+
+def test_fence_mask_preserves_crlf_heading_offsets() -> None:
+    text = "Intro.\r\n```markdown\r\n## Example\r\n```\r\n## Mission\r\n"
+    headings = prd_validate._top_headings(text)
+    assert [(title, line) for title, _start, _end, line in headings] == [("Mission", 5)]
+    assert headings[0][1] == text.index("## Mission")
+
+
+def test_heading_inside_adr_code_value_does_not_end_the_section() -> None:
+    text = _valid_prd().replace(
+        "**Decision:** Apache-2.0.",
+        "**Decision:**\n\n```markdown\n## Example heading\nUse Apache-2.0.\n```",
+    )
+    assert prd_validate.validate_text(text) == []

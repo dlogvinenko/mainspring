@@ -72,7 +72,11 @@ ADR_FIELDS: tuple[str, ...] = (
 
 TOP_HEADING_RE = re.compile(r"^##\s+(.+?)\s*$", re.MULTILINE)
 ADR_HEADING_RE = re.compile(r"^###\s+(ADR-\d+:.+?)\s*$", re.MULTILINE)
-FIELD_RE_TEMPLATE = r"^\*\*{field}:\*\*"
+ADR_FIELD_RE = re.compile(
+    r"^\*\*(" + "|".join(re.escape(field) for field in ADR_FIELDS) + r"):\*\*",
+    re.MULTILINE,
+)
+FENCE_RE = re.compile(r"^ {0,3}(`{3,}|~{3,})(.*)$")
 
 
 @dataclass(frozen=True)
@@ -100,9 +104,32 @@ def _heading_matches(title: str, aliases: tuple[str, ...]) -> bool:
     return False
 
 
+def _without_fenced_code(text: str) -> str:
+    """Hide fenced examples while preserving offsets and line endings."""
+    result: list[str] = []
+    fence: str | None = None
+    for line in text.splitlines(keepends=True):
+        content = line.rstrip("\r\n")
+        if fence is None:
+            opening = FENCE_RE.match(content)
+            if not opening or (
+                opening.group(1).startswith("`") and "`" in opening.group(2)
+            ):
+                result.append(line)
+                continue
+            fence = opening.group(1)
+        elif re.fullmatch(
+            r" {0,3}" + re.escape(fence[0]) + "{" + str(len(fence)) + r",}[ \t]*",
+            content,
+        ):
+            fence = None
+        result.append("".join(char if char in "\r\n" else " " for char in line))
+    return "".join(result)
+
+
 def _top_headings(text: str) -> list[tuple[str, int, int, int]]:
     headings: list[tuple[str, int, int, int]] = []
-    for match in TOP_HEADING_RE.finditer(text):
+    for match in TOP_HEADING_RE.finditer(_without_fenced_code(text)):
         title = match.group(1).strip()
         line = text.count("\n", 0, match.start()) + 1
         headings.append((title, match.start(), match.end(), line))
@@ -169,7 +196,7 @@ def _validate_truth_snapshot(text: str) -> list[ValidationIssue]:
             )
         ]
 
-    lines = section.splitlines()
+    lines = _without_fenced_code(section).splitlines()
     header_index = None
     source_index = None
     for index, line in enumerate(lines):
@@ -200,12 +227,10 @@ def _validate_truth_snapshot(text: str) -> list[ValidationIssue]:
                 break
             continue
         cells = _split_table_row(row)
-        if len(cells) <= source_index:
-            continue
         if not cells or set("".join(cells)) <= {"-", ":"}:
             continue
         data_rows += 1
-        source = cells[source_index].strip()
+        source = cells[source_index].strip() if len(cells) > source_index else ""
         if not source or source in {"-", "N/A"}:
             issues.append(
                 ValidationIssue(
@@ -234,7 +259,8 @@ def _validate_adrs(text: str) -> list[ValidationIssue]:
             )
         ]
 
-    matches = list(ADR_HEADING_RE.finditer(section))
+    structural_section = _without_fenced_code(section)
+    matches = list(ADR_HEADING_RE.finditer(structural_section))
     if not matches:
         return [
             ValidationIssue(
@@ -249,14 +275,22 @@ def _validate_adrs(text: str) -> list[ValidationIssue]:
         start = match.end()
         end = matches[index + 1].start() if index + 1 < len(matches) else len(section)
         body = section[start:end]
-        missing: list[str] = []
-        for field in ADR_FIELDS:
-            field_re = re.compile(
-                FIELD_RE_TEMPLATE.format(field=re.escape(field)),
-                re.MULTILINE,
+        labels = list(ADR_FIELD_RE.finditer(structural_section[start:end]))
+        populated: set[str] = set()
+        for field_index, label in enumerate(labels):
+            value_end = (
+                labels[field_index + 1].start()
+                if field_index + 1 < len(labels)
+                else len(body)
             )
-            if not field_re.search(body):
-                missing.append(field)
+            value = body[label.end() : value_end]
+            if any(
+                line.strip()
+                and not re.fullmatch(r"(?:-{3,}|\*{3,}|_{3,})", line.strip())
+                for line in value.splitlines()
+            ):
+                populated.add(label.group(1))
+        missing = [field for field in ADR_FIELDS if field not in populated]
         if missing:
             issues.append(
                 ValidationIssue(
@@ -276,7 +310,9 @@ def _validate_backlog(text: str) -> list[ValidationIssue]:
                 message="Backlog section is missing",
             )
         ]
-    if not re.search(r"^###\s+Won['’]?t\b", backlog, re.MULTILINE):
+    if not re.search(
+        r"^###\s+Won['’]?t\b", _without_fenced_code(backlog), re.MULTILINE
+    ):
         return [
             ValidationIssue(
                 code="backlog:wont_missing",

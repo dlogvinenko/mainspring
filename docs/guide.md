@@ -152,6 +152,12 @@ These commands shape the backlog before autonomous work starts.
 | Audit task shape | `mainspring scope-check` | Requires a Taskmaster backlog; checks the default backlog for Method issues. |
 | Audit task file | `mainspring scope-check path/to/tasks.json` | Check a specific Taskmaster backlog. |
 
+PRD validation checks live headings, Architecture Decision Records (ADRs), truth tables and lanes; fenced examples
+do not supply that structure. Required ADR fields need nonblank value blocks,
+including multiline prose or code. Short truth data rows without Source are
+reported. A heading-only Won't lane remains allowed. Passing is a structural
+check, not business or approval readiness.
+
 Taskmaster dependency collections must be JSON arrays when present and non-null.
 Malformed task or subtask collections do not establish readiness. Missing/null
 fields and empty arrays keep their no-prerequisite behavior; existing `done`
