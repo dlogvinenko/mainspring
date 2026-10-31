@@ -2318,17 +2318,7 @@ def _cli_main(argv: list[str] | None = None) -> int:
         return 2
     stdout_is_tty = bool(getattr(sys.stdout, "isatty", lambda: False)())
     if (
-        auto_live
-        and not once
-        and not watch
-        and not rich_mode
-        and not output_json
-        and stdout_is_tty
-    ):
-        watch = True
-        rich_mode = _rich_available()
-    elif (
-        no_args
+        (auto_live or no_args)
         and not once
         and not watch
         and not rich_mode

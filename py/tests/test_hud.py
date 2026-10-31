@@ -1732,6 +1732,49 @@ def test_cli_global_json_outputs_machine_snapshot(tmp_path: Path) -> None:
     assert any(run["project"] == "global-app" for run in payload["runs"])
 
 
+@pytest.mark.parametrize("rich_available", [True, False])
+def test_cli_no_args_uses_live_renderer_in_tty(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    rich_available: bool,
+) -> None:
+    runtime_dir = tmp_path / ".mainspring"
+    calls: list[tuple[str, tuple, dict]] = []
+    availability_calls: list[bool] = []
+
+    class TtyStdout:
+        def isatty(self) -> bool:
+            return True
+
+    def rich_is_available() -> bool:
+        availability_calls.append(rich_available)
+        return rich_available
+
+    monkeypatch.setattr(hud.sys, "stdout", TtyStdout())
+    monkeypatch.setattr(hud, "_default_runtime_dir", lambda: runtime_dir)
+    monkeypatch.delenv("MAINSPRING_STATE_DIR", raising=False)
+    monkeypatch.setattr(hud, "_rich_available", rich_is_available)
+    monkeypatch.setattr(
+        hud,
+        "rich_live_snapshot",
+        lambda *args, **kwargs: calls.append(("rich", args, kwargs)),
+    )
+    monkeypatch.setattr(
+        hud,
+        "watch_snapshot",
+        lambda *args, **kwargs: calls.append(("plain", args, kwargs)),
+    )
+
+    assert hud._cli_main([]) == 0
+    assert availability_calls == [rich_available]
+    assert len(calls) == 1
+    renderer, args, kwargs = calls[0]
+    assert renderer == ("rich" if rich_available else "plain")
+    assert args == (runtime_dir / "logs" / "waves.jsonl", runtime_dir / "state")
+    assert kwargs["global_scope"] is False
+    assert kwargs["iterations"] is None
+
+
 def test_cli_auto_live_promotes_plain_hud_to_rich_watch_in_tty(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
