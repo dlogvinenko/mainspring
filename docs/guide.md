@@ -262,6 +262,11 @@ automation setups can override runtime paths with `MAINSPRING_RUNTIME_DIR` or
 
 ## Writer / Reviewer Pairs
 
+Quota snapshots keep malformed numeric or nested evidence unknown. Remaining
+percentages must be finite numbers from 0 to 100; booleans are not measurements.
+Valid legacy used percentages above 100 still yield zero remaining. Binary
+availability, status, source and reset metadata retain their existing meanings.
+
 The hard review gate rejects a nonzero parser exit even when it produces no
 message. JSON arrays, objects and booleans in known review text fields count as
 missing evidence. Numeric score and delta rules, JSON priority, Markdown fallback

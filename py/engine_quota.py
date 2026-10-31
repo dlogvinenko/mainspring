@@ -21,6 +21,7 @@ from __future__ import annotations
 from cli_runtime import run_cli
 
 import json
+import math
 import shutil
 import sys
 from pathlib import Path
@@ -52,23 +53,21 @@ def codex_quota_line() -> str:
             except Exception:
                 continue
 
-    if not latest_payload:
+    if not isinstance(latest_payload, dict) or not latest_payload:
         return (
             "Codex|short_remaining=unknown|short_window=5h|short_reset=unknown"
             "|long_remaining=unknown|long_window=7d|long_reset=unknown|plan=unknown"
         )
 
-    primary = latest_payload.get("primary", {}) or {}
-    secondary = latest_payload.get("secondary", {}) or {}
+    primary = latest_payload.get("primary", {})
+    secondary = latest_payload.get("secondary", {})
+    primary = primary if isinstance(primary, dict) else {}
+    secondary = secondary if isinstance(secondary, dict) else {}
     plan = latest_payload.get("plan_type") or "unknown"
-    short_used = primary.get("used_percent")
-    long_used = secondary.get("used_percent")
-    short_remaining = (
-        "unknown" if short_used is None else max(0.0, 100.0 - float(short_used))
-    )
-    long_remaining = (
-        "unknown" if long_used is None else max(0.0, 100.0 - float(long_used))
-    )
+    short_used = _quota_number(primary.get("used_percent"))
+    long_used = _quota_number(secondary.get("used_percent"))
+    short_remaining = "unknown" if short_used is None else max(0.0, 100.0 - short_used)
+    long_remaining = "unknown" if long_used is None else max(0.0, 100.0 - long_used)
     return (
         f"Codex|short_remaining={short_remaining}"
         f"|short_window={primary.get('window_minutes', 'unknown')}m"
@@ -109,6 +108,8 @@ def claude_quota_line(probe_path: str) -> str:
             continue
         if obj.get("type") == "rate_limit_event":
             info = obj.get("rate_limit_info", {}) or {}
+            if not isinstance(info, dict):
+                continue
             status = info.get("status") or status
             kind = info.get("rateLimitType") or kind
             reset = info.get("resetsAt") or reset
@@ -148,16 +149,22 @@ def _parse_pipe_line(line: str) -> tuple[str, dict[str, str]]:
     return label, values
 
 
-def _parse_percent(value: object) -> float | None:
-    if value is None:
-        return None
-    text = str(value).strip()
-    if not text or text == "unknown":
+def _quota_number(value: object) -> float | None:
+    """Return finite nonnegative numeric evidence, never a Boolean measurement."""
+    if value is None or isinstance(value, bool):
         return None
     try:
-        return round(float(text), 3)
-    except ValueError:
+        parsed = float(str(value).strip())
+    except (ValueError, TypeError, OverflowError):
         return None
+    return parsed if math.isfinite(parsed) and parsed >= 0 else None
+
+
+def _parse_percent(value: object) -> float | None:
+    parsed = _quota_number(value)
+    if parsed is None or parsed > 100:
+        return None
+    return round(parsed, 3)
 
 
 def unknown_snapshot(engine_name: str) -> dict:
@@ -200,6 +207,8 @@ def _normalize_adapter_quota_snapshot(
         if isinstance(quota, dict):
             short = quota.get("short", {})
             long = quota.get("long", {})
+            short = short if isinstance(short, dict) else {}
+            long = long if isinstance(long, dict) else {}
             snapshot.update(
                 {
                     "quota": {
