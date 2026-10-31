@@ -262,6 +262,11 @@ automation setups can override runtime paths with `MAINSPRING_RUNTIME_DIR` or
 
 ## Writer / Reviewer Pairs
 
+The hard review gate rejects a nonzero parser exit even when it produces no
+message. JSON arrays, objects and booleans in known review text fields count as
+missing evidence. Numeric score and delta rules, JSON priority, Markdown fallback
+and duplicate-key handling are unchanged.
+
 - `claude+codex`: Claude writes, Codex reviews.
 - `codex+codex`: Codex writes, Codex reviews.
 - `claude+claude`: Claude writes, Claude reviews.

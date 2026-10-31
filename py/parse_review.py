@@ -96,11 +96,18 @@ def _extract_json_block(text: str) -> dict[str, Any] | None:
 
 
 def _normalize_json_keys(obj: dict[str, Any]) -> dict[str, str]:
-    """Normalize JSON keys to canonical snake_case, coercing values to str."""
+    """Normalize keys and scalar values; malformed required text stays empty."""
     result: dict[str, str] = {}
     for k, v in obj.items():
         # Accept both snake_case and LEGACY_KEY formats in JSON
         canonical = _LEGACY_KEY_MAP.get(k, k)
+        if (
+            canonical in ALL_FIELDS
+            and canonical not in DELTA_FIELDS
+            and canonical != "product_score"
+            and isinstance(v, (list, dict, bool))
+        ):
+            v = None
         result[canonical] = str(v) if v is not None else ""
     return result
 

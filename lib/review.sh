@@ -142,10 +142,14 @@ review_output_hard_validate() {
   local validate_output
   validate_output="$("$(mainspring_python)" "$MAINSPRING_PY_DIR/parse_review.py" validate "$review_file" 2>&1)"
   local validate_rc=$?
-  if [ "$validate_rc" -ne 0 ] && [ -n "$validate_output" ]; then
-    while IFS= read -r line; do
-      [ -n "$line" ] && reasons+=("$line")
-    done <<< "$validate_output"
+  if [ "$validate_rc" -ne 0 ]; then
+    if [ -n "$validate_output" ]; then
+      while IFS= read -r line; do
+        [ -n "$line" ] && reasons+=("$line")
+      done <<< "$validate_output"
+    else
+      reasons+=("review parser failed with exit status $validate_rc")
+    fi
   fi
 
   local product_change_count
