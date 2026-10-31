@@ -4,7 +4,10 @@
 from __future__ import annotations
 
 import re
+import subprocess
 from pathlib import Path
+
+import pytest
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -439,3 +442,107 @@ def test_method_installer_guards_force_delete_destination() -> None:
     assert 'expected="${HOME}/.claude/skills/mainspring-method"' in text
     assert 'rm -rf "$DEST"' in text
     assert text.index("assert_safe_dest") < text.index('rm -rf "$DEST"')
+
+
+def _installer_sandbox(tmp_path: Path) -> tuple[Path, Path, Path, dict[str, str]]:
+    method = tmp_path / "source" / "method"
+    skill = method / "skill"
+    skill.mkdir(parents=True)
+    (skill / "SKILL.md").write_text("Synthetic current skill\n")
+    # Redirect only variable references in a private copy; never override host HOME.
+    source = (
+        _read(METHOD_INSTALL)
+        .replace("${HOME}", "${MAINSPRING_INSTALL_TEST_HOME}")
+        .replace("$HOME", "$MAINSPRING_INSTALL_TEST_HOME")
+    )
+    assert "${HOME}" not in source and "$HOME" not in source
+    script = method / "install.sh"
+    script.write_text(source)
+    sandbox = tmp_path / "sandbox"
+    dest = sandbox / ".claude" / "skills" / "mainspring-method"
+    dest.parent.mkdir(parents=True)
+    (dest.parent / "unrelated.txt").write_text("Preserve unrelated skill\n")
+    env = {
+        "PATH": "/usr/bin:/bin",
+        "LC_ALL": "C",
+        "MAINSPRING_INSTALL_TEST_HOME": str(sandbox),
+    }
+    return script, skill, dest, env
+
+
+@pytest.mark.parametrize("link", [False, True])
+def test_method_installer_force_replaces_dangling_link(
+    tmp_path: Path, link: bool
+) -> None:
+    script, skill, dest, env = _installer_sandbox(tmp_path)
+    previous = tmp_path / "removed-worktree" / "skill"
+    dest.symlink_to(previous, target_is_directory=True)
+
+    result = subprocess.run(
+        ["/bin/bash", str(script), "--force", *(["--link"] if link else [])],
+        cwd=script.parent,
+        env=env,
+        stdin=subprocess.DEVNULL,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert dest.is_symlink() is link
+    if link:
+        assert dest.readlink() == skill
+    assert (dest / "SKILL.md").read_text() == "Synthetic current skill\n"
+    assert (skill / "SKILL.md").read_text() == "Synthetic current skill\n"
+    assert not previous.exists()
+    assert (dest.parent / "unrelated.txt").read_text() == "Preserve unrelated skill\n"
+
+
+@pytest.mark.parametrize("link", [False, True])
+def test_method_installer_dangling_link_requires_force(
+    tmp_path: Path, link: bool
+) -> None:
+    script, _skill, dest, env = _installer_sandbox(tmp_path)
+    previous = tmp_path / "removed-worktree" / "skill"
+    dest.symlink_to(previous, target_is_directory=True)
+
+    result = subprocess.run(
+        ["/bin/bash", str(script), *(["--link"] if link else [])],
+        cwd=script.parent,
+        env=env,
+        stdin=subprocess.DEVNULL,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+
+    assert result.returncode != 0
+    assert "Already installed" in result.stdout
+    assert "Removing existing install" not in result.stdout
+    assert dest.is_symlink() and dest.readlink() == previous
+    assert not previous.exists()
+    assert (dest.parent / "unrelated.txt").read_text() == "Preserve unrelated skill\n"
+
+
+def test_method_installer_force_copy_preserves_linked_source(tmp_path: Path) -> None:
+    script, skill, dest, env = _installer_sandbox(tmp_path)
+    dest.symlink_to(skill, target_is_directory=True)
+
+    result = subprocess.run(
+        ["/bin/bash", str(script), "--force"],
+        cwd=script.parent,
+        env=env,
+        stdin=subprocess.DEVNULL,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert not dest.is_symlink()
+    assert (dest / "SKILL.md").read_text() == "Synthetic current skill\n"
+    assert (skill / "SKILL.md").read_text() == "Synthetic current skill\n"
+    assert (dest.parent / "unrelated.txt").read_text() == "Preserve unrelated skill\n"
