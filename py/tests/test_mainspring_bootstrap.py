@@ -122,6 +122,7 @@ def assert_dist_payload_is_public(names: list[str]) -> None:
     required_suffixes = (
         "mainspring.sh",
         "lib/help.sh",
+        "lib/team_supervision.sh",
         "py/hud.py",
         "docs/architecture.md",
         "docs/competitive-analysis.md",
@@ -589,6 +590,7 @@ def test_pyproject_declares_pipx_console_entry_and_runtime_payload() -> None:
     assert "mainspring.sh" in data_files["share/mainspring"]
     assert "lib/common.sh" in data_files["share/mainspring/lib"]
     assert "lib/work_mode_help.sh" in data_files["share/mainspring/lib"]
+    assert "lib/team_supervision.sh" in data_files["share/mainspring/lib"]
     assert "py/cli_runtime.py" in data_files["share/mainspring/py"]
     assert "py/fd_lock.py" in data_files["share/mainspring/py"]
     assert "py/backlog_source.py" in data_files["share/mainspring/py"]

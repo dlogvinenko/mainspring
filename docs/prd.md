@@ -78,14 +78,14 @@ they were not revalidated as current results in this draft.
 
 | Metric                                  | Value                                              | Source                                                   |
 | --------------------------------------- | -------------------------------------------------- | -------------------------------------------------------- |
-| `mainspring.sh` LOC                     | 450                                                | `wc -l mainspring.sh` on 2026-10-31                      |
+| `mainspring.sh` LOC                     | 451                                                | `wc -l mainspring.sh` on 2026-10-31                      |
 | Bash functions across entrypoint + lib  | 173                                                | function-pattern scan on current `mainspring.sh lib/*.sh` |
 | Source shell syntax                     | passes                                             | `bash -n mainspring.sh lib/*.sh`                         |
 | Source shell lint                       | passes                                             | `shellcheck -S warning mainspring.sh lib/*.sh`           |
 | Python lint                             | 410 baseline findings, zero additions                | Ruff 0.17.3 comparison with public `4d365cc` on 2026-10-30 |
-| Python format                           | passes, 100 files already formatted                 | `ruff format --check py`                                 |
+| Python format                           | passes, 104 files already formatted                 | `ruff format --check py`                                 |
 | Active embedded Python in shell paths   | 0 heredoc / inline-parser hits                     | `rg` scan for `python3 - <<` and `python3 -c` in shell    |
-| Pytest suite files                      | 50                                                 | `find py/tests -name 'test_*.py'` plus count             |
+| Pytest suite files                      | 54                                                 | `find py/tests -name 'test_*.py'` plus count             |
 | Bats suite files                        | 14                                                 | `find tests/bats -name '*.bats'` plus count              |
 | Python line coverage                    | 90.6% (coverage gate pass)                         | `make coverage` on 2026-06-16                           |
 | Full local gate                         | blocked: 1149 Python tests passed, 1 skipped; 223 Bats passed (doctor fixtures isolate inherited interpreter overrides); HUD/docs-site and package smoke pass; 410 baseline Ruff findings; known filelock findings resolved in the validated public dependency graphs | separate local gates on 2026-10-30; `make all` stops at baseline lint |
@@ -1270,13 +1270,13 @@ truth. It is intentionally a map, not a second implementation plan.
 
 ### Runtime and logs
 
-- `.mainspring/logs/waves.jsonl` is the wave ledger. Additive fields are OK;
-  removal or rename needs a schema-version migration.
+- `.mainspring/logs/waves.jsonl` is the wave ledger. Additive fields are OK; removal or rename needs a schema-version migration.
 - `py/wave_log.py` owns ledger rows and failure context. Its readers skip malformed and non-object JSONL rows while preserving the existing verdict and routing interpretation of JSON objects.
 - `py/replay.py` is the source of truth for reconstructing recorded waves. Each replay child derives its controls from the current source and invocation, including `--save-as`, ignores inherited replay-owned leftovers, and preserves the caller and unrelated runtime environment.
 - `py/runtime_state.py` discovers live runtimes for HUD, status, and notifier recovery. It must not trust stale session cwd over a verified process cwd. Project-scoped stop applies notifier attribution to both PID files. Direct Python CLI relative state arguments become absolute for that comparison; relative-only notifier command evidence remains refused. Current PID, `--all` and generic launcher policies stay unchanged.
 - `py/last_run.py` rejects new record separators before any save output; `lib/wizard.sh` stages successful output before cache replacement and preserves tabs. Flat YAML comment boundaries are quote-aware. Only complete old canonical `shlex.quote` single-quoted multiline records are contained; manual double-quoted multiline input still uses historical row parsing. Explicit-user guards, env/enum rules and normal single-line bytes remain unchanged; no crash-atomic/concurrent-writer guarantee is added.
 - `py/stream_json_prettify.py` ignores malformed typed event shapes without hiding later valid events. Valid writer/reviewer output is mirrored to stdout and display files; real I/O errors propagate. Raw logs, text-source rules and provider routing are unchanged; no assistant/result text fallback is added.
+- `lib/team_supervision.sh` requires usable worker counts and uses the reported total for all-dead detection. Complete teams receive no maintenance or dispatch; pending/in-progress or undispatched ready work, and unreadable counts, refuse with restart guidance before claiming no more work. Collector/skip failures refuse, active count failures retry, and verified no-more-work preserves the solo fallback choice. Selected Taskmaster tasks must be arrays; tag priority, missing tag/tasks defaults, phases and task-status policy stay unchanged.
 
 ### Operator visibility
 

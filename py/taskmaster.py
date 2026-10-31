@@ -98,7 +98,10 @@ def _load_tasks(tasks_file: str) -> list[dict]:
     path = Path(tasks_file)
     obj = json.loads(path.read_text(encoding="utf-8"))
     tag = _active_tag(tasks_file)
-    return obj.get(tag, {}).get("tasks", [])
+    tasks = obj.get(tag, {}).get("tasks", [])
+    if not isinstance(tasks, list):
+        raise TypeError("Selected Taskmaster tag tasks must be an array")
+    return tasks
 
 
 def _display_tasks_path(tasks_file: str) -> str:

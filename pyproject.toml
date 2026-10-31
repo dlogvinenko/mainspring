@@ -96,6 +96,7 @@ py-modules = ["cli_runtime", "mainspring_bootstrap"]
   "lib/status.sh",
   "lib/taskmaster_helpers.sh",
   "lib/team.sh",
+  "lib/team_supervision.sh",
   "lib/usage.sh",
   "lib/wave.sh",
   "lib/wave_loop.sh",
