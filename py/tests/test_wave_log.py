@@ -8,6 +8,8 @@ import os
 import sys
 from pathlib import Path
 
+import pytest
+
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 
@@ -740,3 +742,79 @@ def test_read_ledger_skips_invalid(tmp_path: Path) -> None:
     assert len(entries) == 2
     assert entries[0]["ok"] is True
     assert entries[1]["also"] == "ok"
+
+
+# Reader shape guard: syntactically valid scalar/array values are not wave rows.
+NON_OBJECT_JSON = ["[]", "[1,2]", '"text"', "0", "1.25", "true", "false", "null"]
+
+
+def _run_private_reader(command: str, ledger: Path):
+    import subprocess
+
+    return subprocess.run(
+        [sys.executable, str(HERE.parent / "wave_log.py"), command, str(ledger)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+def test_read_ledger_skips_valid_non_object_rows(tmp_path: Path) -> None:
+    ledger = tmp_path / "synthetic-waves.jsonl"
+    ledger.write_text(
+        '{"wave_id":"first"}\n{}\n'
+        + "\n".join(NON_OBJECT_JSON)
+        + '\nnot json\n{"wave_id":"last"}\n'
+    )
+    assert wave_log.read_ledger(ledger) == [
+        {"wave_id": "first"},
+        {},
+        {"wave_id": "last"},
+    ]
+
+
+@pytest.mark.parametrize("bad_row", NON_OBJECT_JSON)
+def test_last_summary_ignores_non_object_rows(tmp_path: Path, bad_row: str) -> None:
+    ledger = tmp_path / "synthetic-waves.jsonl"
+    wave = {
+        "wave_id": "synthetic-last",
+        "verdict": "FAIL",
+        "exit_code": 1,
+        "failure_reason": "review:synthetic",
+    }
+    ledger.write_text(json.dumps(wave) + "\n" + bad_row + "\n")
+    result = _run_private_reader("last-summary", ledger)
+    assert result.returncode == 0, result.stderr
+    assert "Traceback" not in result.stderr
+    assert "id=synthetic-last" in result.stdout
+    assert "verdict=FAIL" in result.stdout
+    assert "failure=review:synthetic" in result.stdout
+
+
+@pytest.mark.parametrize("bad_row", NON_OBJECT_JSON)
+def test_routing_hints_ignores_non_object_rows_without_losing_failure_trend(
+    tmp_path: Path, bad_row: str
+) -> None:
+    ledger = tmp_path / "synthetic-waves.jsonl"
+    waves = [
+        {"wave_id": f"synthetic-{index}", "verdict": "FAIL", "exit_code": 1}
+        for index in range(3)
+    ]
+    ledger.write_text(
+        "\n".join(json.dumps(row) for row in waves) + "\n" + bad_row + "\n"
+    )
+    result = _run_private_reader("routing-hints", ledger)
+    assert result.returncode == 0, result.stderr
+    assert "Traceback" not in result.stderr
+    assert "stop/review recommended" in result.stdout
+
+
+def test_all_non_object_rows_are_no_valid_wave_entries(tmp_path: Path) -> None:
+    ledger = tmp_path / "synthetic-waves.jsonl"
+    ledger.write_text("\n".join(NON_OBJECT_JSON) + "\n")
+    summary = _run_private_reader("last-summary", ledger)
+    routing = _run_private_reader("routing-hints", ledger)
+    assert summary.returncode == routing.returncode == 0
+    assert "no valid ledger entries" in summary.stdout
+    assert "no valid wave metrics" in routing.stdout
+    assert "Traceback" not in summary.stderr + routing.stderr

@@ -426,7 +426,9 @@ Stable fields:
 - `blocked_reason`
 - `next_action`
 
-`--status` reads this ledger, ignores malformed lines, prints the last valid wave, and derives routing hints from recent failures.
+`--status` reads this ledger, ignores malformed and non-object JSONL rows, prints
+the last valid wave, and derives routing hints from recent failures. JSON object
+rows retain their existing verdict and routing interpretation.
 
 Metrics ignore malformed JSON and non-object JSONL rows. Included objects remain in totals when `exit_code` is missing or invalid; success requires `PASS` and an actual
 integer `0` (not Boolean, string, null or float). Time filters require usable zoned timestamps; the ledger writer emits UTC/Z and readers accept explicit offsets. Without

@@ -337,14 +337,16 @@ def cmd_append(ledger_path: str | None = None) -> None:
 
 
 def read_ledger(path: Path) -> list[dict]:
-    """Parse all valid JSONL entries from *path*."""
+    """Parse object JSONL entries, ignoring malformed or non-object rows."""
     entries: list[dict] = []
     for raw in path.read_text(encoding="utf-8", errors="ignore").splitlines():
         raw = raw.strip()
         if not raw:
             continue
         try:
-            entries.append(json.loads(raw))
+            entry = json.loads(raw)
+            if isinstance(entry, dict):
+                entries.append(entry)
         except Exception:
             continue
     return entries

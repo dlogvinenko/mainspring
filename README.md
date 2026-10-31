@@ -246,7 +246,7 @@ Full surface: `mainspring help --full` and [`docs/guide.md`](docs/guide.md).
 | --- | --- | --- |
 | Start or continue | `mainspring` | Guided flow; shows saved setup first. |
 | Watch every run | `mainspring hud` | Live dashboard across discovered Mainspring runs. |
-| Inspect status | `mainspring status` | Read-only project state. |
+| Inspect status | `mainspring status` | Read-only project state. Status ledger readers skip malformed and non-object JSONL rows; object verdict and routing meanings are unchanged. |
 | Diagnose setup | `mainspring doctor` | Missing deps, engines, locks, notifier, quota, and adapter issues. |
 | Preview safely | `mainspring --preset fast-smoke --dry-run` | Resolves commands with zero API calls. |
 | Run Taskmaster work | `mainspring taskmaster --once` | One writer/reviewer wave from Taskmaster. |
