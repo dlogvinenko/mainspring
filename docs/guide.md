@@ -174,6 +174,15 @@ When no backlog exists, Mainspring does not guess: missing backlog prints
 `mainspring init checkout-redesign` guidance so the operator can start from a
 Product Requirements Document (PRD) with a concrete copy/paste example.
 
+Saved settings retain tabs and ordinary single-line quoting; flat YAML comments
+are recognized outside quoted scalars, preserving literal hashes. New saves
+reject record separators before replacing the existing cache. Old complete
+canonical `shlex.quote` single-quoted multiline records are skipped as a unit.
+Hand-edited double-quoted multiline records remain unsupported: historical row
+parsing can still read interior setting-like lines. Explicit user choices and
+existing env/YAML validation rules retain their priority. Save staging does not
+provide crash-atomic or concurrent-writer protection.
+
 ## Advanced and Recovery Commands
 
 These are useful, but they are not the default start path.

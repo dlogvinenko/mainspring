@@ -96,6 +96,28 @@ def _load_schema() -> dict[str, object] | None:
     return json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
 
 
+def _strip_yaml_comment(value: str) -> str:
+    quote = value[0] if value and value[0] in {"'", '"'} else None
+    index = 1 if quote else 0
+    while quote and index < len(value):
+        char = value[index]
+        if quote == '"' and char == "\\":
+            index += 2
+            continue
+        if char == quote:
+            if quote == "'" and index + 1 < len(value) and value[index + 1] == "'":
+                index += 2
+                continue
+            quote = None
+        index += 1
+    if quote:
+        return value
+    for pos in range(index, len(value)):
+        if value[pos] == "#" and (pos == 0 or value[pos - 1].isspace()):
+            return value[:pos].rstrip()
+    return value
+
+
 def _load_yaml(raw: str) -> dict[str, str]:
     # Minimal, non-nested YAML parser: top-level KEY: VALUE only.
     # This is intentionally narrow and safe for config file use.
@@ -113,9 +135,7 @@ def _load_yaml(raw: str) -> dict[str, str]:
         value = raw_value.strip()
         if not key:
             raise ValueError(f"line {lineno}: missing key")
-        if "#" in value:
-            if not (value.startswith("'") or value.startswith('"')):
-                value = value.split("#", 1)[0].rstrip()
+        value = _strip_yaml_comment(value)
         if not value:
             payload[key] = ""
             continue
@@ -218,9 +238,30 @@ def _validate_schema(
     return errors
 
 
+def _old_multiline_record_end(lines: list[str], start: int, value: str) -> int | None:
+    """Contain only complete multiline values in the old writer's exact quote form."""
+    if not value.startswith("'"):
+        return None
+    combined = value
+    for end in range(start, len(lines)):
+        combined += "\n" + lines[end]
+        try:
+            parts = shlex.split(combined, posix=True)
+        except ValueError:
+            continue
+        if len(parts) == 1 and "\n" in parts[0] and shlex.quote(parts[0]) == combined:
+            return end + 1
+        return None
+    return None
+
+
 def _load_env_raw(path: Path) -> dict[str, str]:
     loaded: dict[str, str] = {}
-    for raw in path.read_text(encoding="utf-8").splitlines():
+    lines = path.read_text(encoding="utf-8").splitlines()
+    index = 0
+    while index < len(lines):
+        raw = lines[index]
+        index += 1
         match = re.match(r"^([A-Z_]+)=(.*)$", raw.strip())
         if not match:
             continue
@@ -230,6 +271,14 @@ def _load_env_raw(path: Path) -> dict[str, str]:
         try:
             parts = shlex.split(raw_value, posix=True)
         except ValueError:
+            exact = re.match(r"^([A-Z_]+)=(.*)$", raw.lstrip())
+            end = (
+                _old_multiline_record_end(lines, index, exact.group(2))
+                if exact
+                else None
+            )
+            if end is not None:
+                index = end
             continue
         if len(parts) != 1:
             continue
@@ -239,8 +288,16 @@ def _load_env_raw(path: Path) -> dict[str, str]:
 
 def cmd_save() -> None:
     """Emit KEY=<shell-quoted-value> lines for all allowed keys from env."""
-    for key in sorted(ALLOWED_KEYS):
-        print(f"{key}={shlex.quote(os.environ.get(key, ''))}")
+    values = {key: os.environ.get(key, "") for key in sorted(ALLOWED_KEYS)}
+    for key, value in values.items():
+        if any(char in value for char in "\n\r\v\f\x1c\x1d\x1e\x85\u2028\u2029"):
+            print(
+                f"Cannot save {key}: record separators are unsupported.",
+                file=sys.stderr,
+            )
+            raise SystemExit(2)
+    for key, value in values.items():
+        print(f"{key}={shlex.quote(value)}")
 
 
 def load_settings(path: Path) -> dict[str, str]:

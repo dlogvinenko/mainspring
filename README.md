@@ -98,7 +98,7 @@ normal first-run path.
 | Feature | Command | Why you care |
 | --- | --- | --- |
 | Guided first run | `mainspring` | Start from the project directory; if saved settings exist, it shows them first and offers to continue. |
-| Remembered setup | `mainspring last-run --format json` | See exactly how this project was last launched and copy the repeat/preview commands. |
+| Remembered setup | `mainspring last-run --format json` | See saved launch settings and repeat/preview commands. New multiline values are rejected before cache replacement; tabs and ordinary single-line bytes are preserved. |
 | Live dashboard | `mainspring hud` | See every live Mainspring work process on the machine: folder, PID, tag, task, wave, pass/fail state, notifier health, and team state. |
 | Telegram alerts | `mainspring notify-test` | After the test passes, set `MAINSPRING_NOTIFY_ENABLED=1` before a run to get project/folder/tag-aware messages for failures, retry loops, loop stops, quota, stuck teams, milestones, and daily digest. |
 | Safe smoke run | `mainspring --preset fast-smoke --dry-run` | Preview commands with zero API calls and no file mutation. |
