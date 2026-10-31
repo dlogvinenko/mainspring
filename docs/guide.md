@@ -438,6 +438,11 @@ a time filter, timestamp shape does not exclude rows. A date-only `--since YYYY-
 
 Logs are written under `.mainspring/logs/`.
 
+Claude stream display ignores malformed typed fields and keeps later valid events.
+Valid writer/reviewer output is mirrored to stdout and the display file. Raw logs
+and text-source rules are unchanged; no assistant/result text fallback is added.
+Actual display/output I/O errors still fail.
+
 - `.mainspring/logs/latest.log`: most recent run log.
 - `.mainspring/logs/latest-taskmaster.log`: most recent Taskmaster run log.
 - `.mainspring/logs/latest-summary.log`: latest summary output.

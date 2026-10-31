@@ -49,7 +49,9 @@ def _make_writer(display_path: str | None):
     return out, display_fp
 
 
-def _handle_event(obj: dict, mode: str, out) -> None:
+def _handle_event(obj: object, mode: str, out) -> None:
+    if not isinstance(obj, dict):
+        return
     engine_label = "claude" if mode == "writer" else "review-claude"
     tool_label = "tool" if mode == "writer" else "review-tool"
     complete_msg = "turn complete" if mode == "writer" else "review complete"
@@ -64,17 +66,21 @@ def _handle_event(obj: dict, mode: str, out) -> None:
 
     if t == "stream_event":
         event = obj.get("event", {})
+        if not isinstance(event, dict):
+            return
         et = event.get("type")
 
         if et == "content_block_delta":
             delta = event.get("delta", {})
-            if delta.get("type") == "text_delta":
-                out(delta.get("text", ""))
+            if isinstance(delta, dict) and delta.get("type") == "text_delta":
+                text = delta.get("text", "")
+                if isinstance(text, str):
+                    out(text)
             return
 
         if et == "content_block_start":
             block = event.get("content_block", {})
-            if block.get("type") == "tool_use":
+            if isinstance(block, dict) and block.get("type") == "tool_use":
                 name = block.get("name", "tool")
                 out(f"\n[{tool_label}] {name}\n")
             return
@@ -87,10 +93,19 @@ def _handle_event(obj: dict, mode: str, out) -> None:
 
     if t == "assistant":
         msg = obj.get("message", {})
-        for block in msg.get("content", []) or []:
+        if not isinstance(msg, dict):
+            return
+        content = msg.get("content", [])
+        if not isinstance(content, list):
+            return
+        for block in content:
+            if not isinstance(block, dict):
+                continue
             if block.get("type") == "tool_use":
                 name = block.get("name", "tool")
                 tool_input = block.get("input") or {}
+                if not isinstance(tool_input, dict):
+                    tool_input = {}
                 description = tool_input.get("description")
                 command = tool_input.get("command")
                 if description:
@@ -109,6 +124,10 @@ def _handle_event(obj: dict, mode: str, out) -> None:
         if isinstance(tool_result, dict):
             stdout_v = tool_result.get("stdout", "") or ""
             stderr_v = tool_result.get("stderr", "") or ""
+            if not isinstance(stdout_v, str):
+                stdout_v = ""
+            if not isinstance(stderr_v, str):
+                stderr_v = ""
             if stdout_v.strip():
                 preview = stdout_v.strip().splitlines()[0]
                 out(f"[tool-result] {preview}\n")
