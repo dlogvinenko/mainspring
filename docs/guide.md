@@ -481,6 +481,12 @@ active engine pipeline and its descendants, gives them a short TERM grace
 period, drops observed exited or zombie PIDs, and escalates only surviving
 processes to KILL before releasing the runtime lock. No following wave starts.
 
+`mainspring.lock` and `notifier.pid` use the same project check for recognized
+notifier commands: the command must name this project's ledger or state path.
+Relative-only notifier paths are insufficient attribution. The explicit
+`--all` override, generic launcher handling and current-process protection
+retain their existing behavior.
+
 For structured Claude logs, quota classification uses engine error evidence
 or a rate-limit event with status `rejected`. An `allowed_warning` event means
 work is still permitted. Task prose about quotas and malformed rate-limit

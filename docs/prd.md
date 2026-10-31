@@ -1273,7 +1273,7 @@ truth. It is intentionally a map, not a second implementation plan.
   removal or rename needs a schema-version migration.
 - `py/wave_log.py` owns ledger rows and failure context. Its readers skip malformed and non-object JSONL rows while preserving the existing verdict and routing interpretation of JSON objects.
 - `py/replay.py` is the source of truth for reconstructing recorded waves. Each replay child derives its controls from the current source and invocation, including `--save-as`, ignores inherited replay-owned leftovers, and preserves the caller and unrelated runtime environment.
-- `py/runtime_state.py` discovers live runtimes for HUD, status, and notifier recovery. It must not trust stale session cwd over a verified process cwd.
+- `py/runtime_state.py` discovers live runtimes for HUD, status, and notifier recovery. It must not trust stale session cwd over a verified process cwd. Project-scoped stop applies notifier attribution to both PID files. Direct Python CLI relative state arguments become absolute for that comparison; relative-only notifier command evidence remains refused. Current PID, `--all` and generic launcher policies stay unchanged.
 - `py/stream_json_prettify.py` ignores malformed typed event shapes without hiding later valid events. Valid writer/reviewer output is mirrored to stdout and display files; real I/O errors propagate. Raw logs, text-source rules and provider routing are unchanged; no assistant/result text fallback is added.
 
 ### Operator visibility

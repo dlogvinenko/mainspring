@@ -513,6 +513,7 @@ def _is_notifier_for_state_dir(command: str, state_dir: Path) -> bool:
     tokens = _command_tokens(command)
     if not any(Path(token).name == "notify_telegram.py" for token in tokens):
         return False
+    state_dir = state_dir.absolute()
     runtime_dir = state_dir.parent
     expected = {
         str(runtime_dir / "logs" / "waves.jsonl"),
@@ -617,8 +618,13 @@ def cmd_stop_processes(
             pid = _pid_from_file(path)
             if pid is None:
                 continue
-            if path.name == "notifier.pid":
-                command = _pid_command(pid)
+            command = _pid_command(pid)
+            is_notifier = (
+                _is_mainspring_command(command)
+                and Path(_meaningful_command_token(_command_tokens(command))).name
+                == "notify_telegram.py"
+            )
+            if path.name == "notifier.pid" or is_notifier:
                 if not _is_notifier_for_state_dir(command, root):
                     print(f"Refusing to stop notifier pid {pid} outside {root}")
                     continue

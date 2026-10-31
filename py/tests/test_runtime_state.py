@@ -920,3 +920,148 @@ def test_cli_dispatches_repair_cleanup_and_find_latest_team(
     (team / "config.json").write_text(json.dumps({"name": "beta-team"}))
     runtime_state.main(["find-latest-team", str(state_dir / "team")])
     assert capsys.readouterr().out.strip() == "beta-team"
+
+
+def _attribution_synthetic_process(monkeypatch, command):
+    killed = []
+    monkeypatch.setattr(runtime_state, "_pid_alive", lambda pid: pid == 222)
+    monkeypatch.setattr(runtime_state, "_pid_command", lambda _pid: command)
+    monkeypatch.setattr(
+        runtime_state.os, "kill", lambda pid, sig: killed.append((pid, sig))
+    )
+    monkeypatch.setattr(runtime_state, "_stop_team_backend", lambda _name: False)
+    return killed
+
+
+def _attribution_state(tmp_path, filename):
+    state_dir = tmp_path / "project-p" / ".mainspring" / "state"
+    state_dir.mkdir(parents=True)
+    (state_dir / filename).write_text("222", encoding="utf-8")
+    return state_dir
+
+
+def test_lock_pid_refuses_explicit_foreign_notifier_command(
+    tmp_path, monkeypatch, capsys
+):
+    state_dir = _attribution_state(tmp_path, "mainspring.lock")
+    command = (
+        "python /repo/mainspring/py/notify_telegram.py watch "
+        "/project-q/.mainspring/logs/waves.jsonl --state-dir /project-q/.mainspring/state"
+    )
+    killed = _attribution_synthetic_process(monkeypatch, command)
+    runtime_state.cmd_stop_processes(str(state_dir), 999, force=True)
+    assert killed == []
+    assert "Refusing to stop notifier pid 222 outside" in capsys.readouterr().out
+
+
+def test_relative_state_argument_refuses_unattributed_relative_notifier_command(
+    tmp_path, monkeypatch, capsys
+):
+    state_dir = _attribution_state(tmp_path, "notifier.pid")
+    monkeypatch.chdir(state_dir.parent.parent)
+    command = (
+        "python /repo/mainspring/py/notify_telegram.py watch "
+        ".mainspring/logs/waves.jsonl --state-dir .mainspring/state"
+    )
+    killed = _attribution_synthetic_process(monkeypatch, command)
+    runtime_state.cmd_stop_processes(".mainspring/state", 999, force=True)
+    assert killed == []
+    assert "Refusing to stop notifier pid 222 outside" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("pid_file", ["mainspring.lock", "notifier.pid"])
+def test_project_absolute_notifier_remains_stoppable_from_either_pid_file(
+    tmp_path, monkeypatch, pid_file
+):
+    state_dir = _attribution_state(tmp_path, pid_file)
+    command = (
+        f"python /repo/mainspring/py/notify_telegram.py watch {state_dir.parent}/logs/waves.jsonl "
+        f"--state-dir {state_dir}"
+    )
+    killed = _attribution_synthetic_process(monkeypatch, command)
+    runtime_state.cmd_stop_processes(str(state_dir), 999, force=True)
+    assert killed == [(222, runtime_state.signal.SIGTERM)]
+
+
+def test_relative_caller_with_absolute_project_notifier_evidence_remains_stoppable(
+    tmp_path, monkeypatch
+):
+    state_dir = _attribution_state(tmp_path, "notifier.pid")
+    monkeypatch.chdir(state_dir.parent.parent)
+    command = (
+        f"python /repo/mainspring/py/notify_telegram.py watch {state_dir.parent}/logs/waves.jsonl "
+        f"--state-dir {state_dir}"
+    )
+    killed = _attribution_synthetic_process(monkeypatch, command)
+    runtime_state.cmd_stop_processes(".mainspring/state", 999, force=True)
+    assert killed == [(222, runtime_state.signal.SIGTERM)]
+
+
+def test_absolute_caller_still_refuses_relative_notifier_without_process_cwd(
+    tmp_path, monkeypatch
+):
+    state_dir = _attribution_state(tmp_path, "notifier.pid")
+    command = (
+        "python /repo/mainspring/py/notify_telegram.py watch "
+        ".mainspring/logs/waves.jsonl --state-dir .mainspring/state"
+    )
+    killed = _attribution_synthetic_process(monkeypatch, command)
+    runtime_state.cmd_stop_processes(str(state_dir), 999, force=True)
+    assert killed == []
+
+
+def test_recorded_generic_mainspring_launcher_behavior_is_preserved(
+    tmp_path, monkeypatch
+):
+    state_dir = _attribution_state(tmp_path, "mainspring.lock")
+    killed = _attribution_synthetic_process(
+        monkeypatch, "/bin/bash ./mainspring.sh taskmaster"
+    )
+    runtime_state.cmd_stop_processes(str(state_dir), 999, force=True)
+    assert killed == [(222, runtime_state.signal.SIGTERM)]
+
+
+def test_unknown_recorded_command_is_refused_without_claiming_foreign_identity(
+    tmp_path, monkeypatch
+):
+    state_dir = _attribution_state(tmp_path, "mainspring.lock")
+    killed = _attribution_synthetic_process(monkeypatch, "")
+    runtime_state.cmd_stop_processes(str(state_dir), 999, force=True)
+    assert killed == []
+
+
+def test_explicit_all_projects_override_still_accepts_foreign_notifier(
+    tmp_path, monkeypatch
+):
+    state_dir = _attribution_state(tmp_path, "mainspring.lock")
+    command = (
+        "python /repo/mainspring/py/notify_telegram.py watch "
+        "/project-q/.mainspring/logs/waves.jsonl --state-dir /project-q/.mainspring/state"
+    )
+    killed = _attribution_synthetic_process(monkeypatch, command)
+    monkeypatch.setattr(
+        runtime_state.subprocess,
+        "check_output",
+        lambda *_args, **_kwargs: "222 " + command,
+    )
+    runtime_state.cmd_stop_processes(str(state_dir), 999, force=True, all_projects=True)
+    assert killed == [(222, runtime_state.signal.SIGTERM)]
+
+
+def test_notifier_attribution_never_signals_the_current_process(tmp_path, monkeypatch):
+    state_dir = _attribution_state(tmp_path, "mainspring.lock")
+    command = f"python /repo/mainspring/py/notify_telegram.py watch {state_dir.parent}/logs/waves.jsonl"
+    killed = _attribution_synthetic_process(monkeypatch, command)
+    runtime_state.cmd_stop_processes(str(state_dir), 222, force=True)
+    assert killed == []
+
+
+def test_lock_pid_does_not_expand_generic_command_admission(tmp_path, monkeypatch):
+    monkeypatch.setattr(runtime_state, "_is_mainspring_command", lambda _command: False)
+    state_dir = tmp_path / "custom-state"
+    state_dir.mkdir()
+    (state_dir / "mainspring.lock").write_text("222", encoding="utf-8")
+    command = f"python /repo/notify_telegram.py watch /other/ledger.jsonl --state-dir {state_dir}"
+    killed = _attribution_synthetic_process(monkeypatch, command)
+    runtime_state.cmd_stop_processes(str(state_dir), 999, force=True)
+    assert killed == []

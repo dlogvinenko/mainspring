@@ -251,7 +251,7 @@ Full surface: `mainspring help --full` and [`docs/guide.md`](docs/guide.md).
 | Preview safely | `mainspring --preset fast-smoke --dry-run` | Resolves commands with zero API calls. |
 | Run Taskmaster work | `mainspring taskmaster --once` | One writer/reviewer wave from Taskmaster. |
 | Run PRD work | `mainspring night --prd docs/prd.md --once` | One wave from the Product Requirements Document. |
-| Stop this project | `mainspring stop --force` | Stops recorded processes for the current project. |
+| Stop this project | `mainspring stop --force` | Stops recorded processes for the current project. Recognized notifier commands in either PID file must name this project's ledger or state path. |
 | Test Telegram | `mainspring notify-test` | Sends one configured test alert. |
 | Check Telegram | `mainspring notify-health --format json` | Reads notifier health without calling Telegram. |
 | Metrics | `mainspring --metrics --days 7 --routing` | Pass rate, duration, routing, cost, stuck tasks. |
