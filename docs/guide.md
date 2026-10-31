@@ -158,6 +158,13 @@ including multiline prose or code. Short truth data rows without Source are
 reported. A heading-only Won't lane remains allowed. Passing is a structural
 check, not business or approval readiness.
 
+`decompose --apply` matches structured generated records by exact source,
+digest and `taskId`. Text-only legacy records require complete `GeneratedBy`,
+`Source` and `Digest` marker lines. Malformed container shapes and ambiguous
+legacy identity fail before a backup or task-file write. Valid merges keep
+existing status, dependencies, subtasks and custom data. Digest/rendering and
+edited-task behavior retain their existing rules.
+
 Taskmaster dependency collections must be JSON arrays when present and non-null.
 Malformed task or subtask collections do not establish readiness. Missing/null
 fields and empty arrays keep their no-prerequisite behavior; existing `done`

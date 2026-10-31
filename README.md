@@ -88,7 +88,7 @@ normal first-run path.
 | Step | What Mainspring does | Why it matters |
 | --- | --- | --- |
 | 1. Initialize | Creates `.mainspring/` local run state and helps you point at a Product Requirements Document (PRD) or Taskmaster backlog. | The project gets local, inspectable state instead of hidden hosted state. |
-| 2. Plan | Uses a Product Requirements Document (PRD) or Taskmaster tasks to select bounded work. | The agent works against intent, not vibes. |
+| 2. Plan | Uses a Product Requirements Document (PRD) or Taskmaster tasks to select bounded work. | The agent works against intent, not vibes. Decomposition keeps separate ID-less entries distinct even when their text is identical. |
 | 3. Execute | Runs a writer agent with Claude, Codex, or a LiteLLM provider. | You can choose the engine pair that fits the work. |
 | 4. Review | Runs a separate reviewer gate before claiming progress. | The writer does not grade its own work. |
 | 5. Record | Records wave evidence, changed files, tests, scores, and failures. | You can audit, replay, and debug the run later. |

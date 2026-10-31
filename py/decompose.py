@@ -475,13 +475,14 @@ def _generated_task_matches(task: dict, plan: TaskPromptPlan) -> bool:
             mainspring.get("generatedBy") == "decompose"
             and mainspring.get("source") == plan.source
             and mainspring.get("digest") == plan.digest
+            and mainspring.get("taskId") == plan.task_id
         )
-    text = _task_text(task)
-    return (
-        "GeneratedBy: decompose" in text
-        and f"Source: {plan.source}" in text
-        and f"Digest: {plan.digest}" in text
-    )
+    lines = set(_task_text(task).splitlines())
+    return {
+        "GeneratedBy: decompose",
+        f"Source: {plan.source}",
+        f"Digest: {plan.digest}",
+    } <= lines
 
 
 def _find_generated_task(tasks: list[dict], plan: TaskPromptPlan) -> dict | None:
@@ -526,9 +527,18 @@ def _load_taskmaster(tasks_file: Path) -> dict:
     if not tasks_file.exists():
         raise FileNotFoundError(f"Taskmaster file not found: {tasks_file}")
     data = json.loads(tasks_file.read_text(encoding="utf-8"))
-    data.setdefault("master", {}).setdefault("tasks", [])
-    if not isinstance(data["master"]["tasks"], list):
+    # These validate JSON content, not the valid Path argument. ValueError
+    # preserves the existing controlled CLI diagnostic for malformed files.
+    if not isinstance(data, dict):
+        raise ValueError("Taskmaster file must contain an object")  # noqa: TRY004
+    master = data.setdefault("master", {})
+    if not isinstance(master, dict):
+        raise ValueError("Taskmaster master must be an object")  # noqa: TRY004
+    tasks = master.setdefault("tasks", [])
+    if not isinstance(tasks, list):
         raise ValueError("Taskmaster file must contain master.tasks array")
+    if any(not isinstance(task, dict) for task in tasks):
+        raise ValueError("Taskmaster master.tasks entries must be objects")
     return data
 
 
@@ -548,6 +558,19 @@ def apply_plans(
     """Apply generated task plans to a Taskmaster tasks.json file."""
     data = _load_taskmaster(tasks_file)
     tasks: list[dict] = data["master"]["tasks"]
+
+    identities: dict[tuple[str, str], set[str]] = {}
+    for plan in plans:
+        identities.setdefault((plan.source, plan.digest), set()).add(plan.task_id)
+    for plan in plans:
+        if len(identities[(plan.source, plan.digest)]) > 1 and any(
+            not isinstance(task.get("mainspring"), dict)
+            and _generated_task_matches(task, plan)
+            for task in tasks
+        ):
+            raise ValueError(
+                "ambiguous legacy generated task identity; explicit taskId evidence is required"
+            )
 
     backup_dir.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
