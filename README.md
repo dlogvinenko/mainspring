@@ -105,7 +105,7 @@ normal first-run path.
 | One reviewed wave | `mainspring taskmaster --once` | Take one ready Taskmaster item through writer/reviewer verification. |
 | PRD-driven work | `mainspring night --prd docs/prd.md --once` | Let the Product Requirements Document (PRD) select the next useful slice. |
 | Metrics | `mainspring --metrics --days 7 --routing` | Read pass rate, duration, routing, cost, and stuck-task signals for the last week. |
-| Replay | `mainspring replay show last .mainspring/logs/waves.jsonl` | Inspect past waves without trusting memory or terminal scrollback. |
+| Replay | `mainspring replay show last .mainspring/logs/waves.jsonl` | Inspect past waves without trusting memory or terminal scrollback. Replay children use controls from the current source and invocation, including `--save-as`; inherited replay leftovers are ignored without changing the caller or unrelated runtime settings. |
 
 Metrics ignore malformed JSON and non-object JSONL rows. Included objects remain in totals when `exit_code` is missing or invalid; success requires `PASS` and an actual
 integer `0` (not Boolean, string, null or float). Time filters require usable zoned timestamps; the ledger writer emits UTC/Z and readers accept explicit offsets. Without

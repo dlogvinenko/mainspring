@@ -168,6 +168,10 @@ These are useful, but they are not the default start path.
 | Engine handshake | `mainspring --self-test` | Live writer/reviewer handshake; requires configured engines and may consume provider quota. |
 | Pair matrix handshake | `mainspring --self-test-all` | Live built-in pair checks; requires configured engines and may consume provider quota. |
 
+Each `replay run` child uses controls from the current source and invocation,
+including `--save-as`. Inherited replay-owned leftovers are ignored; the calling
+process and unrelated runtime environment are preserved.
+
 `mainspring hud` is the global live dashboard in an interactive terminal. Plain
 `mainspring hud` opens the Rich watch view immediately. It prints every live
 Mainspring work process on the machine with folder, PID, Taskmaster tag, task,

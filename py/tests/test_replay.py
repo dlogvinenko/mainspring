@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -718,6 +719,118 @@ def test_build_replay_environment_overrides_live_reconstruction_targets_work_ite
     assert env["MAINSPRING_REPLAY_TARGET_ID"] == "42.3"
     assert env["MAINSPRING_REPLAY_ORIGINAL_MODE"] == "taskmaster"
     assert "MAINSPRING_REPLAY_PROMPT_FILE" not in env
+
+
+@pytest.mark.parametrize("source_kind", ["snapshot", "live-task", "live-prd"])
+@pytest.mark.parametrize("save_as", [None, "current-replay-id"])
+def test_replay_environment_replaces_prior_control_context(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    source_kind: str,
+    save_as: str | None,
+) -> None:
+    inherited = {
+        "MAINSPRING_WAVE_ID_OVERRIDE": "prior-replay-id",
+        "MAINSPRING_REPLAYED_FROM": "prior-source",
+        "MAINSPRING_REPLAY_OVERRIDES": '{"original_wave_id": "prior-source"}',
+        "MAINSPRING_REPLAY_PROMPT_FILE": "prior-prompt.md",
+        "MAINSPRING_REPLAY_TARGET_ID": "99.1",
+        "MAINSPRING_REPLAY_ORIGINAL_MODE": "night",
+        "MAINSPRING_REPLAY_LIVE_RECONSTRUCTION": "1",
+    }
+    for key, value in inherited.items():
+        monkeypatch.setenv(key, value)
+    runtime = str(tmp_path / "runtime")
+    monkeypatch.setenv("MAINSPRING_RUNTIME_DIR", runtime)
+    protected = {key: os.environ.get(key) for key in ("HOME", "home", "CODEX_HOME")}
+    prompt = tmp_path / "current-prompt.md"
+    prompt.write_text("Synthetic current prompt\n", encoding="utf-8")
+    snapshot = source_kind == "snapshot"
+    prd_only = source_kind == "live-prd"
+    wave = _make_wave(
+        wave_id="current-source",
+        mode="night" if prd_only else "taskmaster",
+        task_id="" if prd_only else "42.3",
+        prd_path=str(tmp_path / "synthetic-prd.md") if prd_only else "",
+        prompt_path=str(prompt) if snapshot else "",
+    )
+    env = replay.build_replay_environment(
+        wave,
+        replay.ReplayOverrides(
+            save_as=save_as,
+            allow_live_reconstruction=not snapshot,
+        ),
+    )
+
+    assert env["MAINSPRING_REPLAYED_FROM"] == "current-source"
+    if prd_only:
+        assert "MAINSPRING_REPLAY_TARGET_ID" not in env
+    else:
+        assert env["MAINSPRING_REPLAY_TARGET_ID"] == "42.3"
+    assert env["MAINSPRING_REPLAY_ORIGINAL_MODE"] == wave["mode"]
+    assert (
+        json.loads(env["MAINSPRING_REPLAY_OVERRIDES"])["original_wave_id"]
+        == "current-source"
+    )
+    if save_as:
+        assert env["MAINSPRING_WAVE_ID_OVERRIDE"] == save_as
+    else:
+        assert "MAINSPRING_WAVE_ID_OVERRIDE" not in env
+    if snapshot:
+        assert env["MAINSPRING_REPLAY_PROMPT_FILE"] == str(prompt)
+        assert "MAINSPRING_REPLAY_LIVE_RECONSTRUCTION" not in env
+    else:
+        assert "MAINSPRING_REPLAY_PROMPT_FILE" not in env
+        assert env["MAINSPRING_REPLAY_LIVE_RECONSTRUCTION"] == "1"
+    assert env["MAINSPRING_RUNTIME_DIR"] == runtime
+    assert {key: env.get(key) for key in protected} == protected
+    assert {key: os.environ.get(key) for key in inherited} == inherited
+
+
+def test_cmd_run_live_reconstruction_does_not_inherit_prior_prompt_or_id(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    capture = tmp_path / "captured.json"
+    keys = [
+        "MAINSPRING_WAVE_ID_OVERRIDE",
+        "MAINSPRING_REPLAY_PROMPT_FILE",
+        "MAINSPRING_REPLAY_LIVE_RECONSTRUCTION",
+        "MAINSPRING_REPLAY_TARGET_ID",
+        "MAINSPRING_REPLAYED_FROM",
+    ]
+    script = tmp_path / "mainspring.sh"
+    script.write_text(
+        f"#!{sys.executable}\n"
+        "import json\nimport os\nimport sys\nfrom pathlib import Path\n"
+        f"keys = {keys!r}\n"
+        "payload = {'argv': sys.argv[1:], 'env': {key: os.environ[key] for key in keys if key in os.environ}}\n"
+        f"Path({str(capture)!r}).write_text(json.dumps(payload))\n",
+        encoding="utf-8",
+    )
+    script.chmod(0o700)
+    prior_prompt = tmp_path / "prior-prompt.md"
+    prior_prompt.write_text("Synthetic prior prompt\n", encoding="utf-8")
+    monkeypatch.setenv("MAINSPRING_REPLAY_PROMPT_FILE", str(prior_prompt))
+    monkeypatch.setenv("MAINSPRING_WAVE_ID_OVERRIDE", "prior-replay-id")
+    monkeypatch.chdir(tmp_path)
+    ledger = _write_ledger(
+        tmp_path, [_make_wave(wave_id="current-source", task_id="42.3")]
+    )
+
+    result = replay.cmd_run(
+        "current-source", str(ledger), ["--allow-live-reconstruction"]
+    )
+
+    assert result == 0
+    captured = json.loads(capture.read_text(encoding="utf-8"))
+    assert captured["argv"][0] == "taskmaster"
+    assert "--once" in captured["argv"]
+    assert "MAINSPRING_REPLAY_PROMPT_FILE" not in captured["env"]
+    assert "MAINSPRING_WAVE_ID_OVERRIDE" not in captured["env"]
+    assert captured["env"]["MAINSPRING_REPLAY_LIVE_RECONSTRUCTION"] == "1"
+    assert captured["env"]["MAINSPRING_REPLAY_TARGET_ID"] == "42.3"
+    assert captured["env"]["MAINSPRING_REPLAYED_FROM"] == "current-source"
 
 
 # Scenario: Prompt snapshot hash matches the recorded ledger hash.

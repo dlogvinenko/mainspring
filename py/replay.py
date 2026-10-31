@@ -828,6 +828,17 @@ def build_replay_environment(
 ) -> dict[str, str]:
     """Build environment for a real replay run."""
     env = os.environ.copy()
+    # Each replay owns its controls; a previous replay must not select its input.
+    for key in (
+        "MAINSPRING_WAVE_ID_OVERRIDE",
+        "MAINSPRING_REPLAYED_FROM",
+        "MAINSPRING_REPLAY_OVERRIDES",
+        "MAINSPRING_REPLAY_PROMPT_FILE",
+        "MAINSPRING_REPLAY_TARGET_ID",
+        "MAINSPRING_REPLAY_ORIGINAL_MODE",
+        "MAINSPRING_REPLAY_LIVE_RECONSTRUCTION",
+    ):
+        env.pop(key, None)
     env.update(build_replay_environment_overrides(original, overrides))
     return env
 

@@ -1271,7 +1271,7 @@ truth. It is intentionally a map, not a second implementation plan.
 - `.mainspring/logs/waves.jsonl` is the wave ledger. Additive fields are OK;
   removal or rename needs a schema-version migration.
 - `py/wave_log.py` owns ledger rows and failure context.
-- `py/replay.py` is the source of truth for reconstructing recorded waves.
+- `py/replay.py` is the source of truth for reconstructing recorded waves. Each replay child derives its controls from the current source and invocation, including `--save-as`, ignores inherited replay-owned leftovers, and preserves the caller and unrelated runtime environment.
 - `py/runtime_state.py` discovers live runtimes for HUD, status, and notifier
   recovery. It must not trust stale session cwd over a verified process cwd.
 
