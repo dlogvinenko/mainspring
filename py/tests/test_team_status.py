@@ -23,6 +23,7 @@ def _run(field: str, input_json: str) -> subprocess.CompletedProcess[str]:
         input=input_json,
         capture_output=True,
         text=True,
+        check=False,
     )
 
 
@@ -244,6 +245,7 @@ def test_cli_no_args() -> None:
         [sys.executable, SCRIPT],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 2
 
@@ -256,5 +258,6 @@ def test_cli_unknown_field() -> None:
         input="{}",
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 2

@@ -699,6 +699,7 @@ def test_cli_no_args() -> None:
         [sys.executable, SCRIPT],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 2
 
@@ -709,6 +710,7 @@ def test_cli_unknown_subcommand() -> None:
         [sys.executable, SCRIPT, "bogus"],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 2
 
@@ -719,6 +721,7 @@ def test_cli_dispatch_missing_args() -> None:
         [sys.executable, SCRIPT, "dispatch", "team"],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 2
 
@@ -766,6 +769,7 @@ def test_cli_counts_missing_args() -> None:
         [sys.executable, SCRIPT, "counts"],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 2
 
@@ -776,6 +780,7 @@ def test_cli_nudge_missing_args() -> None:
         [sys.executable, SCRIPT, "nudge"],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 2
 
@@ -786,5 +791,6 @@ def test_cli_requeue_missing_args() -> None:
         [sys.executable, SCRIPT, "requeue"],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 2

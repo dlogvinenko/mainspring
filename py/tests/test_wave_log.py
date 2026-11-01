@@ -451,6 +451,7 @@ def test_cmd_append_valid_json(tmp_path: Path) -> None:
             capture_output=True,
             text=True,
             env={**os.environ},
+            check=False,
         )
         assert result.returncode == 0
         line = result.stdout.strip()

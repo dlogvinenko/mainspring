@@ -820,13 +820,18 @@ def test_find_latest_team_skips_unreadable_json(tmp_path: Path) -> None:
 
 
 def test_cli_no_args() -> None:
-    result = subprocess.run([sys.executable, SCRIPT], capture_output=True, text=True)
+    result = subprocess.run(
+        [sys.executable, SCRIPT], capture_output=True, text=True, check=False
+    )
     assert result.returncode == 2
 
 
 def test_cli_unknown_subcommand() -> None:
     result = subprocess.run(
-        [sys.executable, SCRIPT, "bogus"], capture_output=True, text=True
+        [sys.executable, SCRIPT, "bogus"],
+        capture_output=True,
+        text=True,
+        check=False,
     )
     assert result.returncode == 2
 
@@ -871,6 +876,7 @@ def test_cli_rejects_malformed_numeric_args_without_traceback(
         [sys.executable, SCRIPT, *argv],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 2
