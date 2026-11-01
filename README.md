@@ -43,7 +43,7 @@ earlier allowed LiteLLM: `MAINSPRING_PROVIDERS_PYTHON=python3.13 make install-us
 Source checkouts can also run `./mainspring.sh --project /path/to/your-project`.
 The packaged `mainspring` command uses its pipx Python; a project's `.venv` cannot hide HUD dependencies.
 Optional `fnm` bootstrap discards failed helper output and keeps the existing directory fallback. The v1 install path
-is source install until package-manager channels are actually published.
+is source install until package-manager channels are actually published. Generated formula URL/homepage values stay literal Ruby data.
 
 ## Why It Exists
 

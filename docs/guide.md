@@ -79,6 +79,10 @@ JSON helper. Helper failure discards its entire output and uses the existing
 first-directory fallback. Successful-helper string cleanup, directory checks
 and handling of the producer's exit status remain unchanged.
 
+Release formula generation preserves accepted URL/homepage values as literal
+Ruby data, including quotes, backslashes, controls and interpolation text.
+Existing stripping, validators and CLI behavior remain unchanged.
+
 ## Everyday Commands
 
 These are the commands most operators need day to day.

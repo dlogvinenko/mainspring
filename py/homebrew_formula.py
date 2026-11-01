@@ -7,6 +7,7 @@ from __future__ import annotations
 from cli_runtime import run_cli
 
 import argparse
+import json
 import re
 import tomllib
 from pathlib import Path
@@ -105,6 +106,12 @@ def validate_python_dependency(dependency: str) -> str:
     return cleaned
 
 
+def _ruby_string_literal(value: str) -> str:
+    """Preserve escapes and interpolation starters as Ruby string data."""
+    escaped = json.dumps(value, ensure_ascii=False)
+    return re.sub(r"#(?=[{@$])", r"\\#", escaped)
+
+
 def build_formula(
     *,
     version: str,
@@ -128,8 +135,8 @@ class Mainspring < Formula
   include Language::Python::Virtualenv
 
   desc "{formula_desc}"
-  homepage "{formula_homepage}"
-  url "{formula_url}"
+  homepage {_ruby_string_literal(formula_homepage)}
+  url {_ruby_string_literal(formula_url)}
   sha256 "{formula_sha256}"
   license "Apache-2.0"
   version "{formula_version}"
