@@ -198,6 +198,7 @@ def test_cli_json_outputs_registered_engines() -> None:
         capture_output=True,
         text=True,
         env=env,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -224,6 +225,7 @@ def test_cli_text_names_execution_status() -> None:
         [sys.executable, SCRIPT],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -850,6 +852,7 @@ def test_cli_command_json_outputs_adapter_command() -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -879,6 +882,7 @@ def test_cli_command_nul_preserves_multiline_prompt(tmp_path: Path) -> None:
             "nul",
         ],
         capture_output=True,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -944,6 +948,7 @@ def test_cli_validate_accepts_provider_execution_status() -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -954,6 +959,7 @@ def test_cli_default_model() -> None:
         [sys.executable, SCRIPT, "default-model", "gemini"],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -1030,6 +1036,7 @@ def test_cli_failure_reason_from_tail_file(tmp_path: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -1102,6 +1109,7 @@ def test_cli_failure_rejects_bad_exit_code() -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 2

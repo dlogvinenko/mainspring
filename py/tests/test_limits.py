@@ -256,6 +256,7 @@ def test_limits_cli_json_round_trips(tmp_path: Path) -> None:
         [sys.executable, SCRIPT, "--ledger", str(ledger), "--format", "json"],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 0

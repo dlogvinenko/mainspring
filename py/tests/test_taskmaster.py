@@ -962,6 +962,7 @@ def test_next_cli_exits_one_when_no_ready_work(tmp_path: Path) -> None:
         [sys.executable, SCRIPT, "next", path],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 1
@@ -978,6 +979,7 @@ def test_next_active_prd_missing_path_errors_out(tmp_path: Path) -> None:
         [sys.executable, SCRIPT, "next", path, "--active-prd"],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 2
@@ -1310,6 +1312,7 @@ def test_collect_parallel_cli_invalid_limit_falls_back_to_default(
         [sys.executable, SCRIPT, "collect-parallel", path, "--limit", "not-int"],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -1514,6 +1517,7 @@ def test_scope_check_cli_exits_nonzero_for_high_violations(tmp_path: Path) -> No
         [sys.executable, SCRIPT, "scope-check", path],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 1
@@ -1563,7 +1567,9 @@ def test_scope_check_missing_default_task_file_is_operator_friendly(
 
 
 def test_cli_no_args() -> None:
-    result = subprocess.run([sys.executable, SCRIPT], capture_output=True, text=True)
+    result = subprocess.run(
+        [sys.executable, SCRIPT], capture_output=True, text=True, check=False
+    )
     assert result.returncode == 2
     assert "task-status" in result.stderr
     assert "team-skip-reason" in result.stderr
@@ -1572,7 +1578,10 @@ def test_cli_no_args() -> None:
 
 def test_cli_unknown_subcommand() -> None:
     result = subprocess.run(
-        [sys.executable, SCRIPT, "bogus"], capture_output=True, text=True
+        [sys.executable, SCRIPT, "bogus"],
+        capture_output=True,
+        text=True,
+        check=False,
     )
     assert result.returncode == 2
 
@@ -1600,6 +1609,7 @@ def test_cli_subcommands_require_expected_arguments(
         [sys.executable, SCRIPT, *args],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 2
@@ -1618,6 +1628,7 @@ def test_cli_help_for_nested_commands(args: list[str], usage: str) -> None:
         [sys.executable, SCRIPT, *args],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 0
