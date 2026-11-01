@@ -20,15 +20,15 @@ Usage:
 
 from __future__ import annotations
 
-from cli_runtime import run_cli
-
 import json
 import os
 import re
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
+
+from cli_runtime import run_cli
 
 
 def _parse_time(value: str | None) -> datetime | None:
@@ -156,7 +156,7 @@ def _record_dispatch(
         "subject": subject,
         "team_task_id": team_task_id,
         "owner": owner,
-        "ts": datetime.now(timezone.utc).isoformat(),
+        "ts": datetime.now(UTC).isoformat(),
     }
     _write_dispatch_ledger(team_name, ledger)
     return ledger[tm_id]
@@ -170,7 +170,7 @@ def _refresh_dispatch_ledger_from_team_tasks(
     if not payload:
         return ledger
 
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     changed = False
     for task in _tm_tasks(payload):
         subject = str(task.get("subject") or "")
@@ -455,7 +455,7 @@ def cmd_nudge(team_name: str, min_age_seconds: int = 60) -> None:
     if not payload:
         return
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     all_tasks = payload.get("data", {}).get("tasks", []) or []
 
     for task in all_tasks:
@@ -540,7 +540,7 @@ def cmd_requeue(team_name: str, stale_minutes: int = 10) -> None:
     if not payload:
         return
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     for task in payload.get("data", {}).get("tasks", []) or []:
         subject = str(task.get("subject") or "")
         if (
