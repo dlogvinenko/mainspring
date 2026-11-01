@@ -243,15 +243,13 @@ def test_build_snapshot_includes_live_runtime_context(
         encoding="utf-8",
     )
     (state_dir.parent / "last-run.env").write_text(
-        "\n".join(
-            [
-                "MODE=night",
-                "TOPOLOGY=solo",
-                "PAIR_MODE=codex+codex",
-                "SPEED_PROFILE=max",
-                "MAX_AGENTS=6",
-                "PRD_PATH=docs/prd.md",
-            ]
+        (
+            "MODE=night\n"
+            "TOPOLOGY=solo\n"
+            "PAIR_MODE=codex+codex\n"
+            "SPEED_PROFILE=max\n"
+            "MAX_AGENTS=6\n"
+            "PRD_PATH=docs/prd.md"
         ),
         encoding="utf-8",
     )
@@ -506,13 +504,7 @@ def test_build_snapshot_falls_back_to_prd_checkbox_progress(tmp_path: Path) -> N
     docs.mkdir(parents=True)
     _write_ledger(ledger)
     (docs / "prd.md").write_text(
-        "\n".join(
-            [
-                "# Product Requirements Document (PRD)",
-                "- [x] Shipped",
-                "- [ ] Remaining",
-            ]
-        ),
+        ("# Product Requirements Document (PRD)\n- [x] Shipped\n- [ ] Remaining"),
         encoding="utf-8",
     )
 

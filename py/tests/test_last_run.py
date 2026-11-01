@@ -184,19 +184,15 @@ def test_roundtrip(tmp_path: Path) -> None:
 def test_load_valid_yaml_config(tmp_path: Path) -> None:
     config = tmp_path / ".mainspring.yaml"
     config.write_text(
-        "\n".join(
-            [
-                "mode: taskmaster",
-                "pair-mode: codex+codex",
-                "speed_profile: fast",
-                "max-agents: 2",
-                "auto-retry-ci: 1",
-                "auto-retry-ci-log: .omx/logs/latest-ci.log",
-                "agent-mode: architect",
-                "run-once: true",
-                "topology: solo",
-            ]
-        )
+        "mode: taskmaster\n"
+        "pair-mode: codex+codex\n"
+        "speed_profile: fast\n"
+        "max-agents: 2\n"
+        "auto-retry-ci: 1\n"
+        "auto-retry-ci-log: .omx/logs/latest-ci.log\n"
+        "agent-mode: architect\n"
+        "run-once: true\n"
+        "topology: solo"
     )
     result = subprocess.run(
         [sys.executable, SCRIPT, "load", str(config)],
@@ -268,16 +264,12 @@ def test_load_yaml_malformed_syntax_fails_closed(tmp_path: Path) -> None:
 
 def test_load_yaml_handles_comments_quotes_booleans_and_numbers() -> None:
     loaded = last_run._load_yaml(
-        "\n".join(
-            [
-                "# comment",
-                "mode: taskmaster # inline comment",
-                "model-override: 'gpt # keep hash'",
-                "run-once: false",
-                "max-agents: 3",
-                "auto-retry-ci-log:",
-            ]
-        )
+        "# comment\n"
+        "mode: taskmaster # inline comment\n"
+        "model-override: 'gpt # keep hash'\n"
+        "run-once: false\n"
+        "max-agents: 3\n"
+        "auto-retry-ci-log:"
     )
 
     assert loaded == {
@@ -346,22 +338,20 @@ def test_load_env_raw_ignores_invalid_quotes_and_multi_values(tmp_path: Path) ->
 def test_show_outputs_project_summary_and_repeat_commands(tmp_path: Path) -> None:
     path = tmp_path / "last-run.env"
     path.write_text(
-        "\n".join(
-            [
-                "MODE=taskmaster",
-                "PAIR_MODE=codex+codex",
-                "ENGINE=codex",
-                "MODEL_OVERRIDE=gpt-5.5",
-                "REVIEW_ENGINE=codex",
-                "REVIEW_MODEL_OVERRIDE=gpt-5.5",
-                "TOPOLOGY=team",
-                "SPEED_PROFILE=max",
-                "MAX_AGENTS=6",
-                "AGENT_MODE=code",
-                "RUN_ONCE=false",
-                "AUTO_RETRY_CI=1",
-                "AUTO_CHECKPOINT=true",
-            ]
+        (
+            "MODE=taskmaster\n"
+            "PAIR_MODE=codex+codex\n"
+            "ENGINE=codex\n"
+            "MODEL_OVERRIDE=gpt-5.5\n"
+            "REVIEW_ENGINE=codex\n"
+            "REVIEW_MODEL_OVERRIDE=gpt-5.5\n"
+            "TOPOLOGY=team\n"
+            "SPEED_PROFILE=max\n"
+            "MAX_AGENTS=6\n"
+            "AGENT_MODE=code\n"
+            "RUN_ONCE=false\n"
+            "AUTO_RETRY_CI=1\n"
+            "AUTO_CHECKPOINT=true"
         ),
         encoding="utf-8",
     )

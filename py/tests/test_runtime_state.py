@@ -738,15 +738,13 @@ def test_stop_processes_all_stops_matching_mainspring_processes(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    ps_output = "\n".join(
-        [
-            "111 /bin/bash ./mainspring.sh taskmaster",
-            "222 python unrelated.py",
-            "333 python /opt/mainspring/bin/mainspring hud",
-            "444 vim /tmp/mainspring.sh",
-            "555 python /tmp/hud.py",
-            "666 /usr/bin/env python3 /repo/mainspring/py/notify_telegram.py watch .mainspring/logs/waves.jsonl",
-        ]
+    ps_output = (
+        "111 /bin/bash ./mainspring.sh taskmaster\n"
+        "222 python unrelated.py\n"
+        "333 python /opt/mainspring/bin/mainspring hud\n"
+        "444 vim /tmp/mainspring.sh\n"
+        "555 python /tmp/hud.py\n"
+        "666 /usr/bin/env python3 /repo/mainspring/py/notify_telegram.py watch .mainspring/logs/waves.jsonl"
     )
     killed: list[int] = []
 

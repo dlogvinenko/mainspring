@@ -82,12 +82,10 @@ def test_render_reports_missing_original_and_review_determinism(tmp_path: Path) 
     scenario = tmp_path / "fixture"
     scenario.mkdir()
     (scenario / golden_run.LEDGER_NAME).write_text(
-        "\n".join(
-            [
-                '{"wave_id":"w1","verdict":"PASS","engines":{"writer":"claude","reviewer":"codex"},"product_score":"10"}',
-                '{"wave_id":"w2","verdict":"PASS","replayed_from":"missing","engines":{"writer":"claude","reviewer":"codex"}}',
-                '{"wave_id":"w3","verdict":"FAIL","replayed_from":"w1","engines":{"writer":"claude","reviewer":"codex"},"failure_reason":"review:gate_failed","next_action":"repair"}',
-            ]
+        (
+            '{"wave_id":"w1","verdict":"PASS","engines":{"writer":"claude","reviewer":"codex"},"product_score":"10"}\n'
+            '{"wave_id":"w2","verdict":"PASS","replayed_from":"missing","engines":{"writer":"claude","reviewer":"codex"}}\n'
+            '{"wave_id":"w3","verdict":"FAIL","replayed_from":"w1","engines":{"writer":"claude","reviewer":"codex"},"failure_reason":"review:gate_failed","next_action":"repair"}'
         )
         + "\n",
         encoding="utf-8",

@@ -134,23 +134,21 @@ def test_build_wave_entry_happy_path() -> None:
 # Expected: product_files_changed counts only the source/product path.
 def test_build_wave_entry_counts_only_product_files() -> None:
     _set_wave_env(
-        CHANGED_FILES_VALUE="\n".join(
-            [
-                ".pytest_cache/v/cache/nodeids",
-                ".ruff_cache/0.15.11/cache",
-                ".taskmaster/tasks/tasks.json",
-                ".gradle/8.10.2/fileHashes/fileHashes.bin",
-                "build/test-results/test/TEST-Foo.xml",
-                "dist/assets/app.js",
-                "target/classes/App.class",
-                "server/tracker.db-shm",
-                "server/tracker.db-wal",
-                "py/__pycache__/wave_log.cpython-314.pyc",
-                "AGENTS.md",
-                "README.md",
-                "docs/prd.md",
-                "py/wave_log.py",
-            ]
+        CHANGED_FILES_VALUE=(
+            ".pytest_cache/v/cache/nodeids\n"
+            ".ruff_cache/0.15.11/cache\n"
+            ".taskmaster/tasks/tasks.json\n"
+            ".gradle/8.10.2/fileHashes/fileHashes.bin\n"
+            "build/test-results/test/TEST-Foo.xml\n"
+            "dist/assets/app.js\n"
+            "target/classes/App.class\n"
+            "server/tracker.db-shm\n"
+            "server/tracker.db-wal\n"
+            "py/__pycache__/wave_log.cpython-314.pyc\n"
+            "AGENTS.md\n"
+            "README.md\n"
+            "docs/prd.md\n"
+            "py/wave_log.py"
         )
     )
     try:

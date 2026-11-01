@@ -237,13 +237,8 @@ def test_prd_current_sections_use_public_repo_contract() -> None:
         "packaging/homebrew/                # source-only Homebrew tap publishing runbook"
         in text
     )
-    stale_homebrew_layout = "".join(
-        [
-            "packaging/homebrew/                # gen",
-            "erated ",
-            "formula release ",
-            "notes",
-        ]
+    stale_homebrew_layout = (
+        "packaging/homebrew/                # generated formula release notes"
     )
     assert stale_homebrew_layout not in text
 
