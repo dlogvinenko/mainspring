@@ -11,11 +11,11 @@ Usage:
 
 from __future__ import annotations
 
-from cli_runtime import run_cli
-
 import re
 import sys
 from pathlib import Path
+
+from cli_runtime import run_cli
 
 IMPORTANT_KEYWORDS = (
     "Vision",

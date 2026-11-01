@@ -8,12 +8,11 @@ wrap this adapter later or pass provider/model strings through ``--model`` now.
 
 from __future__ import annotations
 
-from collections.abc import Mapping
 import sys
+from collections.abc import Mapping
 from pathlib import Path
 
 from engines._base import EngineCommand, EngineFailure, EngineInfo
-
 
 PROVIDER_ENV_VARS: tuple[tuple[tuple[str, ...], tuple[str, ...]], ...] = (
     (("azure/",), ("AZURE_API_KEY", "AZURE_API_BASE", "AZURE_API_VERSION")),

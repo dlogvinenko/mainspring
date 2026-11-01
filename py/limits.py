@@ -4,8 +4,6 @@
 
 from __future__ import annotations
 
-from cli_runtime import run_cli
-
 import json
 import os
 import sys
@@ -14,10 +12,10 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import metrics
+from cli_runtime import run_cli
 from engine_quota import engine_snapshot
 from engines.registry import load_engines, readiness_errors
 from notify_telegram import extract_wave_cost
-
 
 BAR_WIDTH = 10
 HELP_TEXT = """Usage: mainspring limits [engine ...] [--engine <name>] [--format text|json] [--hours N]

@@ -17,8 +17,6 @@ Answers the 7 standard questions:
 
 from __future__ import annotations
 
-from cli_runtime import run_cli
-
 import json
 import sys
 from collections import Counter, defaultdict
@@ -26,8 +24,8 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from statistics import median
 
+from cli_runtime import run_cli
 from failure_taxonomy import normalise_failure_reason_class
-
 
 AUTO_DISABLE_WINDOW_DAYS = 14
 AUTO_DISABLE_THRESHOLD_RATIO = 0.7

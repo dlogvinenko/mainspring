@@ -20,8 +20,6 @@ the ledger file with append mode (``>> waves.jsonl``).
 
 from __future__ import annotations
 
-from cli_runtime import run_cli
-
 import fcntl
 import json
 import os
@@ -29,6 +27,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from cli_runtime import run_cli
 from failure_taxonomy import normalise_failure_reason_class
 
 

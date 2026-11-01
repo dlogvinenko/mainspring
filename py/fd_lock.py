@@ -4,12 +4,11 @@
 
 from __future__ import annotations
 
-from cli_runtime import run_cli
-
 import errno
 import sys
 from typing import Sequence
 
+from cli_runtime import run_cli
 
 BUSY_ERRNOS = {errno.EACCES, errno.EAGAIN}
 USAGE = "Usage: fd_lock.py check|lock|unlock [fd]"

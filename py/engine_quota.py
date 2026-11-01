@@ -18,16 +18,14 @@ matching the format the bash monolith already parses with ``sed``.
 
 from __future__ import annotations
 
-from cli_runtime import run_cli
-
 import json
 import math
 import shutil
 import sys
 from pathlib import Path
 
+from cli_runtime import run_cli
 from engines.registry import get_adapter, get_engine
-
 
 # ── codex ───────────────────────────────────────────────────────────────
 

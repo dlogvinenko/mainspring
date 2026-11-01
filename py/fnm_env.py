@@ -4,12 +4,11 @@
 
 from __future__ import annotations
 
-from cli_runtime import run_cli
-
 import json
 import sys
 from typing import TextIO
 
+from cli_runtime import run_cli
 
 ALLOWED_FNM_KEYS = (
     "FNM_COREPACK_ENABLED",

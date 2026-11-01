@@ -12,8 +12,6 @@ Taskmaster when ``.taskmaster/`` is absent.
 
 from __future__ import annotations
 
-from cli_runtime import run_cli
-
 import json
 import os
 import re
@@ -23,6 +21,7 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+from cli_runtime import run_cli
 
 HELP_TEXT = """Usage: mainspring init <name> [--force]
 

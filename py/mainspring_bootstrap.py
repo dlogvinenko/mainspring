@@ -4,14 +4,14 @@
 
 from __future__ import annotations
 
-from cli_runtime import run_cli
-
 import os
 import shutil
 import sys
 from importlib import metadata
 from pathlib import Path
 from typing import Iterable
+
+from cli_runtime import run_cli
 
 
 def candidate_script_paths() -> list[Path]:

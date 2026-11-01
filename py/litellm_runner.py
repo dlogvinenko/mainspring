@@ -9,8 +9,6 @@ capture stdout exactly like the CLI-backed engines.
 
 from __future__ import annotations
 
-from cli_runtime import run_cli
-
 import argparse
 import json
 import os
@@ -20,6 +18,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, TextIO
 
+from cli_runtime import run_cli
 from engines.litellm_adapter import (
     format_missing_env_vars_message,
     missing_env_vars_for_model,

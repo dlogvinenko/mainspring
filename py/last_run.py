@@ -15,8 +15,6 @@ Never ``source`` settings directly — this module parses values safely.
 
 from __future__ import annotations
 
-from cli_runtime import run_cli
-
 import json
 import os
 import re
@@ -24,6 +22,8 @@ import shlex
 import sys
 from datetime import datetime
 from pathlib import Path
+
+from cli_runtime import run_cli
 
 ALLOWED_KEYS = frozenset(
     {

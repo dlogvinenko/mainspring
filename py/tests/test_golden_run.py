@@ -5,9 +5,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-
 import golden_run
+import pytest
 import replay
 
 ROOT_DIR = Path(__file__).resolve().parents[2]

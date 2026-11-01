@@ -9,10 +9,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-import pytest
-
 import fd_lock
-
+import pytest
 
 HELPER = Path(__file__).resolve().parents[1] / "fd_lock.py"
 

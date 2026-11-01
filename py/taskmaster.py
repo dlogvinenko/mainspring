@@ -31,14 +31,14 @@ Usage:
 
 from __future__ import annotations
 
-from cli_runtime import run_cli
-
 import json
 import os
 import re
 import sys
 from collections import Counter
 from pathlib import Path
+
+from cli_runtime import run_cli
 
 DEFAULT_TEAM_EXCLUDE_PREFIXES = ".claude"
 DEFAULT_TASKMASTER_DISPLAY_PATH = ".taskmaster/tasks/tasks.json"

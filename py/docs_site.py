@@ -4,14 +4,13 @@
 
 from __future__ import annotations
 
-from cli_runtime import run_cli
-
 import argparse
 import shutil
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+from cli_runtime import run_cli
 
 MARKER = ".mainspring-docs-site"
 

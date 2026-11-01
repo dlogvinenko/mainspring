@@ -13,13 +13,13 @@ CLI:
 
 from __future__ import annotations
 
-from cli_runtime import run_cli
-
 import json
 import re
 import sys
 from pathlib import Path
 from typing import Any
+
+from cli_runtime import run_cli
 
 # The 11 fields from the PRD REQUIRED_FIELDS contract, plus 5 operational
 # fields the current review gate uses for repair instructions.

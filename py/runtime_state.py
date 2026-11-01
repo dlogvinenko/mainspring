@@ -21,8 +21,6 @@ Usage:
 
 from __future__ import annotations
 
-from cli_runtime import run_cli
-
 import json
 import os
 import shlex
@@ -31,6 +29,8 @@ import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+
+from cli_runtime import run_cli
 
 
 def _usage_error(message: str, usage: str) -> None:

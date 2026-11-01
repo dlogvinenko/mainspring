@@ -15,8 +15,6 @@ Usage:
 
 from __future__ import annotations
 
-from cli_runtime import run_cli
-
 import hashlib
 import json
 import re
@@ -27,8 +25,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import prd_validate
+from cli_runtime import run_cli
 from taskmaster import MANUAL_BLOCKER_RE
-
 
 PHASE_HEADING_RE = re.compile(r"^###\s+(.+?)\s*$", re.MULTILINE)
 CHECKBOX_RE = re.compile(

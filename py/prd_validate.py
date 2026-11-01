@@ -17,14 +17,13 @@ Usage:
 
 from __future__ import annotations
 
-from cli_runtime import run_cli
-
 import json
 import re
 import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
+from cli_runtime import run_cli
 
 SECTION_GROUPS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("Mission", ("Mission",)),

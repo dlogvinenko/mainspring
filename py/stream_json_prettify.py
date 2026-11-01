@@ -28,13 +28,13 @@ in a subshell (SC2031). Example:
 
 from __future__ import annotations
 
-from cli_runtime import run_cli
-
 import argparse
 import json
 import os
 import sys
 from contextlib import ExitStack
+
+from cli_runtime import run_cli
 
 
 def _make_writer(display_fp):

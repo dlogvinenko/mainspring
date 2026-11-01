@@ -7,11 +7,10 @@ from __future__ import annotations
 import builtins
 import json
 import os
+import sys
 from io import StringIO
 from pathlib import Path
 from types import SimpleNamespace
-
-import sys
 
 import pytest
 

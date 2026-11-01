@@ -338,8 +338,8 @@ def test_counts_happy_path(mock_run: MagicMock, capsys: object) -> None:
     mock_run.return_value = _make_completed(0, _list_tasks_response(tasks))
 
     team_dispatch.cmd_counts("test-team")
-    import io
     import contextlib
+    import io
 
     buf = io.StringIO()
     mock_run.return_value = _make_completed(0, _list_tasks_response(tasks))

@@ -14,13 +14,12 @@ without launching model CLIs or mutating Taskmaster state.
 
 from __future__ import annotations
 
-from cli_runtime import run_cli
-
 import difflib
 import sys
 from pathlib import Path
 
 import replay
+from cli_runtime import run_cli
 
 LEDGER_NAME = "waves.jsonl"
 EXPECTED_NAME = "expected.txt"

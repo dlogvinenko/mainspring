@@ -4,14 +4,13 @@
 
 from __future__ import annotations
 
-from cli_runtime import run_cli
-
 import argparse
 import json
 import re
 import tomllib
 from pathlib import Path
 
+from cli_runtime import run_cli
 
 FORMULA_DESC = "PRD-first AI coding agent orchestration"
 HOMEBREW_DESC_MAX_LENGTH = 80

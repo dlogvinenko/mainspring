@@ -30,8 +30,6 @@ Usage:
 
 from __future__ import annotations
 
-from cli_runtime import run_cli
-
 import json
 import math
 import os
@@ -43,6 +41,7 @@ import urllib.request
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+from cli_runtime import run_cli
 
 # Configuration
 

@@ -23,10 +23,10 @@ Fields:
 
 from __future__ import annotations
 
-from cli_runtime import run_cli
-
 import json
 import sys
+
+from cli_runtime import run_cli
 
 
 def _nonnegative_count(value: object) -> int | None:

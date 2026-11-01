@@ -29,8 +29,6 @@ Unique to Mainspring — no other autonomous-loop tool offers wave-level replay.
 
 from __future__ import annotations
 
-from cli_runtime import run_cli
-
 import json
 import os
 import subprocess
@@ -38,6 +36,7 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+from cli_runtime import run_cli
 
 # Ledger reader
 

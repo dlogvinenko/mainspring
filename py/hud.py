@@ -15,8 +15,6 @@ Usage:
 
 from __future__ import annotations
 
-from cli_runtime import run_cli
-
 import json
 import os
 import re
@@ -30,6 +28,7 @@ from pathlib import Path
 
 import metrics
 import notify_telegram
+from cli_runtime import run_cli
 
 
 def _parse_timestamp(entry: dict, target_tz: tzinfo | None = None) -> datetime | None:
@@ -1747,8 +1746,8 @@ def format_global_text(snapshot: dict, *, width: int | None = None) -> str:
 def format_rich(snapshot: dict):
     """Return a Rich renderable for the live HUD."""
     try:
-        from rich.console import Group
         from rich import box
+        from rich.console import Group
         from rich.panel import Panel
         from rich.table import Table
         from rich.text import Text

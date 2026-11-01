@@ -4,8 +4,6 @@
 
 from __future__ import annotations
 
-from cli_runtime import run_cli
-
 import argparse
 import json
 import os
@@ -14,6 +12,8 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+
+from cli_runtime import run_cli
 
 
 class FreshCloneSmokeError(RuntimeError):

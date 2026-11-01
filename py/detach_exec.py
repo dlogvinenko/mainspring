@@ -4,10 +4,10 @@
 
 from __future__ import annotations
 
-from cli_runtime import run_cli
-
 import os
 import sys
+
+from cli_runtime import run_cli
 
 
 def main(argv: list[str] | None = None) -> int:
