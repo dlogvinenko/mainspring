@@ -459,3 +459,65 @@ def test_ambiguous_legacy_refuses_even_beside_valid_structured_match(
     result = dispatch(path, "--apply", "--tasks-file", tasks, "--backup-dir", backups)
     assert result.returncode == 1 and b"ambiguous legacy" in result.stderr
     assert tasks.read_bytes() == original and not backups.exists()
+
+
+@pytest.mark.parametrize("explicit_ids", [False, True])
+def test_default_filter_preserves_original_checkbox_identity(tmp_path, explicit_ids):
+    path = prd(tmp_path, duplicate=True, mixed=True)
+    expected = ["P1-1", "P1-2"]
+    if explicit_ids:
+        path.write_text(
+            canonical._valid_prd(
+                "### P1 - Current phase (ACTIVE)\n\n"
+                "- [x] **P1-7 Update `src/docs.py`.**\n"
+                "- [ ] **P1-42 Update `src/docs.py`.**\n"
+            )
+        )
+        assert validator.validate_prd(path) == []
+        expected = ["P1-7", "P1-42"]
+    phases = d.parse_phase_map(path.read_text())
+
+    unchecked = d.build_plan(path, phases[0], phases)
+    included = d.build_plan(path, phases[0], phases, include_done=True)
+
+    assert [plan.task_id for plan in unchecked] == expected[1:]
+    assert [plan.task_id for plan in included] == expected
+    assert unchecked == included[1:]
+
+
+def test_toggling_include_done_does_not_reassign_duplicate_occurrences(tmp_path):
+    path = prd(tmp_path, duplicate=True, mixed=True)
+    tasks = task_file(tmp_path, {"master": {"tasks": []}})
+    backups = tmp_path / "backups"
+
+    first = apply(path, tasks, backups, through_dispatch=True)
+
+    assert first["apply"]["created"] == [1]
+    assert first["apply"]["updated"] == first["apply"]["unchanged"] == []
+    data = json.loads(tasks.read_bytes())
+    original = data["master"]["tasks"][0]
+    assert original["mainspring"]["taskId"] == "P1-2"
+    original.update(
+        status="review", dependencies=[90], subtasks=[{"id": 1, "status": "done"}]
+    )
+    expected = copy.deepcopy(original)
+    tasks.write_text(json.dumps(data, indent=2) + "\n")
+
+    included = apply(path, tasks, backups, through_dispatch=True, include_done=True)
+
+    assert included["apply"]["created"] == [2]
+    assert included["apply"]["updated"] == []
+    assert included["apply"]["unchanged"] == [1]
+    after = json.loads(tasks.read_bytes())["master"]["tasks"]
+    assert after[0] == expected
+    assert {item["id"]: item["mainspring"]["taskId"] for item in after} == {
+        1: "P1-2",
+        2: "P1-1",
+    }
+    unchanged = tasks.read_bytes()
+
+    filtered = apply(path, tasks, backups, through_dispatch=True)
+
+    assert filtered["apply"]["created"] == filtered["apply"]["updated"] == []
+    assert filtered["apply"]["unchanged"] == [1]
+    assert tasks.read_bytes() == unchanged
