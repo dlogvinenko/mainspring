@@ -568,6 +568,11 @@ mainspring --repair-state --dry-run
 
 Mainspring can send Telegram notifications for key events during autonomous execution.
 
+The internal `detach_exec.py` launch helper reports usage status 2 for a missing
+or empty first command before session or exec operations. Valid commands retain
+their argv. Operating-system exec errors retain status 127; session-creation
+exceptions still propagate before execution. This adds no daemon-ready or recovery contract.
+
 Use this when you run several long-lived projects at once. Runtime event
 messages include `Project:`, `Folder:`, and `Tag:` so you can tell which run is
 speaking.

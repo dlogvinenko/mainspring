@@ -12,7 +12,7 @@ import sys
 
 def main(argv: list[str] | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
-    if not args:
+    if not args or not args[0]:
         print("Usage: detach_exec.py <command> [args...]", file=sys.stderr)
         return 2
     os.setsid()
