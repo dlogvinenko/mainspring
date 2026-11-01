@@ -27,7 +27,7 @@ import shlex
 import signal
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from cli_runtime import run_cli
@@ -329,7 +329,7 @@ def cmd_repair(state_dir: str, dry_run: bool = False, force: bool = False) -> No
         )
         raise SystemExit(2)
 
-    now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    now = datetime.now(UTC).isoformat().replace("+00:00", "Z")
     if stale_completed_mismatch or stale_dead_session:
         skill["active"] = False
         skill["phase"] = "completed"

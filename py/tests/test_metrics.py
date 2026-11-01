@@ -36,7 +36,7 @@ def _make_entry(
     models: dict[str, str] | None = None,
 ) -> dict:
     if ts is None:
-        ts = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        ts = datetime.now(UTC).isoformat().replace("+00:00", "Z")
     entry: dict = {
         "timestamp": ts,
         "wave_id": wave_id,
@@ -272,7 +272,7 @@ def test_compute_metrics_all_pass() -> None:
 # Scenario: Ledger rows use PRD canonical fields instead of legacy aliases.
 # Expected: Metrics still compute pair, timestamp, duration, and model truth.
 def test_canonical_ledger_fields() -> None:
-    now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    now = datetime.now(UTC).isoformat().replace("+00:00", "Z")
     entries = [
         {
             "ts": now,
@@ -385,7 +385,7 @@ def test_compute_metrics_pass_rate_per_pair() -> None:
 # Scenario: Filter by days.
 # Expected: only recent entries returned.
 def test_filter_by_days() -> None:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     old_ts = (now - timedelta(days=30)).isoformat().replace("+00:00", "Z")
     new_ts = (now - timedelta(hours=1)).isoformat().replace("+00:00", "Z")
     entries = [
@@ -721,7 +721,7 @@ def test_disabled_pair_state_accepts_legacy_shapes_and_manual_disabled(
         state_file,
         value_metrics,
         recommendation,
-        now=datetime(2026, 5, 4, tzinfo=timezone.utc),
+        now=datetime(2026, 5, 4, tzinfo=UTC),
     )
 
     assert state["disabled_pairs"] == [
@@ -928,7 +928,7 @@ def test_cli_routing_json_output(tmp_path: Path) -> None:
 
 def test_cli_routing_defaults_to_fourteen_day_window(tmp_path: Path) -> None:
     ledger = tmp_path / "waves.jsonl"
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     _write_ledger(
         ledger,
         [

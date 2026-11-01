@@ -207,9 +207,9 @@ def _read_usage_sidecar(path_value: str) -> dict[str, Any]:
 
 def build_wave_entry() -> dict:
     """Build a wave ledger entry dict from environment variables."""
-    from datetime import datetime, timezone
+    from datetime import UTC, datetime
 
-    timestamp = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    timestamp = datetime.now(UTC).isoformat().replace("+00:00", "Z")
     writer_engine = os.environ.get("ENGINE_VALUE") or ""
     reviewer_engine = os.environ.get("REVIEWER_VALUE") or ""
     writer_model = os.environ.get("MODEL_VALUE") or "default"

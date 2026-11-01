@@ -38,7 +38,7 @@ import sys
 import time
 import urllib.error
 import urllib.request
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from cli_runtime import run_cli
@@ -145,7 +145,7 @@ MODEL_PRICES_USD_PER_MTOK = {
 def log_status(message: str, now: float | None = None) -> None:
     """Write an operator-visible daemon status line."""
     ts = (
-        datetime.fromtimestamp(now or time.time(), timezone.utc)
+        datetime.fromtimestamp(now or time.time(), UTC)
         .isoformat()
         .replace("+00:00", "Z")
     )
@@ -549,7 +549,7 @@ def _parse_ts(value: object) -> datetime | None:
     except (TypeError, ValueError):
         return None
     if parsed.tzinfo is None:
-        return parsed.replace(tzinfo=timezone.utc)
+        return parsed.replace(tzinfo=UTC)
     return parsed
 
 
@@ -965,7 +965,7 @@ def build_daily_digest(
 
     now = now if now is not None else datetime.now().astimezone()
     now_local = now if now.tzinfo is not None else now.astimezone()
-    now = now_local.astimezone(timezone.utc)
+    now = now_local.astimezone(UTC)
     if mode == "calendar":
         digest_date = (now_local - timedelta(days=days)).date()
     else:
@@ -976,7 +976,7 @@ def build_daily_digest(
         ts = _entry_timestamp(e)
         if ts is None:
             continue
-        ts_utc = ts.astimezone(timezone.utc)
+        ts_utc = ts.astimezone(UTC)
         if mode == "calendar":
             if ts_utc.astimezone(now_local.tzinfo).date() != digest_date:
                 continue
@@ -2142,7 +2142,7 @@ def cmd_test(args: list[str] | None = None) -> None:
 
     msg = (
         "🧪 Mainspring notification test\n"
-        f"Time: {datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')}\n"
+        f"Time: {datetime.now(UTC).isoformat().replace('+00:00', 'Z')}\n"
         "If you see this, Telegram notifications are working."
     )
     result = send_message(msg)

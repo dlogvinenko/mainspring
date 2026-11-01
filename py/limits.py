@@ -8,7 +8,7 @@ import json
 import os
 import sys
 import textwrap
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import metrics
@@ -33,11 +33,11 @@ Examples:
 
 
 def _utcnow() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def _iso_z(dt: datetime) -> str:
-    return dt.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+    return dt.astimezone(UTC).isoformat().replace("+00:00", "Z")
 
 
 def _parse_ts(value: object) -> datetime | None:
@@ -52,13 +52,13 @@ def _parse_ts(value: object) -> datetime | None:
         if numeric > 0:
             if numeric > 10_000_000_000:
                 numeric = numeric / 1000.0
-            return datetime.fromtimestamp(numeric, tz=timezone.utc)
+            return datetime.fromtimestamp(numeric, tz=UTC)
     try:
         parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
     except ValueError:
         return None
     if parsed.tzinfo is None:
-        return parsed.replace(tzinfo=timezone.utc)
+        return parsed.replace(tzinfo=UTC)
     return parsed
 
 

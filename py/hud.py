@@ -23,7 +23,7 @@ import shutil
 import subprocess
 import sys
 import time
-from datetime import datetime, timedelta, timezone, tzinfo
+from datetime import UTC, datetime, timedelta, tzinfo
 from pathlib import Path
 
 import metrics
@@ -119,7 +119,7 @@ def _entry_summary(entry: dict, target_tz: tzinfo | None = None) -> dict:
 def _entry_sort_key(entry: dict) -> tuple[datetime, str]:
     timestamp = _parse_timestamp(entry)
     if timestamp is None:
-        timestamp = datetime.min.replace(tzinfo=timezone.utc)
+        timestamp = datetime.min.replace(tzinfo=UTC)
     return timestamp, str(entry.get("wave_id") or "")
 
 
@@ -1229,7 +1229,7 @@ def _snapshot_activity_time(snapshot: dict) -> datetime:
     try:
         return datetime.fromtimestamp(ledger.stat().st_mtime).astimezone()
     except OSError:
-        return datetime.min.replace(tzinfo=timezone.utc).astimezone()
+        return datetime.min.replace(tzinfo=UTC).astimezone()
 
 
 def _consecutive_failure_count(recent_waves: list[dict], current: dict) -> int:

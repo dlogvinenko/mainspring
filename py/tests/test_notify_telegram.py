@@ -566,9 +566,9 @@ class TestBuildDailyDigest:
     # Scenario: Mix of pass and fail entries from today.
     # Expected: Digest with correct counts and pass rate.
     def test_basic_digest(self) -> None:
-        from datetime import datetime, timezone
+        from datetime import UTC, datetime
 
-        now_iso = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        now_iso = datetime.now(UTC).isoformat().replace("+00:00", "Z")
         entries = [
             _make_entry(verdict="PASS", duration_seconds=100, task_id="1"),
             _make_entry(verdict="PASS", duration_seconds=200, task_id="2"),
@@ -590,9 +590,9 @@ class TestBuildDailyDigest:
     # Scenario: Digest receives rows that use canonical PRD schema fields.
     # Expected: The row is included and pair/duration/cost truth is preserved.
     def test_canonical_ledger_digest_fields(self) -> None:
-        from datetime import datetime, timezone
+        from datetime import UTC, datetime
 
-        now_iso = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        now_iso = datetime.now(UTC).isoformat().replace("+00:00", "Z")
         entries = [
             {
                 "ts": now_iso,
@@ -622,9 +622,9 @@ class TestBuildDailyDigest:
     # Scenario: A canonical row has PASS text but a nonzero exit code.
     # Expected: Digest failure math follows the same fail-closed truth as alerts.
     def test_digest_counts_nonzero_exit_as_failure(self) -> None:
-        from datetime import datetime, timezone
+        from datetime import UTC, datetime
 
-        now_iso = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        now_iso = datetime.now(UTC).isoformat().replace("+00:00", "Z")
         entries = [
             _make_entry(verdict="PASS", exit_code="0", task_id="clean"),
             _make_entry(verdict="PASS", exit_code="1", task_id="failed-exit"),
@@ -642,9 +642,9 @@ class TestBuildDailyDigest:
     # Scenario: Repeated nonzero-exit rows have legacy PASS verdicts.
     # Expected: Stuck-task detection still flags the failing task.
     def test_digest_stuck_tasks_use_exit_code_failure_truth(self) -> None:
-        from datetime import datetime, timezone
+        from datetime import UTC, datetime
 
-        now_iso = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        now_iso = datetime.now(UTC).isoformat().replace("+00:00", "Z")
         entries = [
             _make_entry(verdict="PASS", exit_code="1", task_id="stuck-exit"),
             _make_entry(verdict="PASS", exit_code="1", task_id="stuck-exit"),
@@ -663,9 +663,9 @@ class TestBuildDailyDigest:
     # Scenario: Recent entries include real cost and token usage.
     # Expected: Digest reports spend, top-cost waves, token totals, and unit costs.
     def test_cost_and_token_digest(self) -> None:
-        from datetime import datetime, timezone
+        from datetime import UTC, datetime
 
-        now_iso = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        now_iso = datetime.now(UTC).isoformat().replace("+00:00", "Z")
         entries = [
             _make_entry(
                 wave_id="w1",
@@ -700,9 +700,9 @@ class TestBuildDailyDigest:
     # Scenario: Digest has canonical product_score rows but no explicit score_delta.
     # Expected: Cost per score movement is inferred and clearly labeled.
     def test_cost_digest_uses_product_score_movement_when_delta_absent(self) -> None:
-        from datetime import datetime, timezone
+        from datetime import UTC, datetime
 
-        now_iso = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        now_iso = datetime.now(UTC).isoformat().replace("+00:00", "Z")
         entries = [
             _make_entry(wave_id="w-low", cost_usd=1.0, product_score=700),
             _make_entry(wave_id="w-high", cost_usd=1.0, product_score=740),
@@ -719,9 +719,9 @@ class TestBuildDailyDigest:
     # Scenario: Some rows have product movement but no cost truth.
     # Expected: Unit economics use only costed wave deltas.
     def test_cost_digest_unit_costs_ignore_uncosted_delta_rows(self) -> None:
-        from datetime import datetime, timezone
+        from datetime import UTC, datetime
 
-        now_iso = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        now_iso = datetime.now(UTC).isoformat().replace("+00:00", "Z")
         entries = [
             _make_entry(
                 wave_id="w-cost-1",
@@ -757,9 +757,9 @@ class TestBuildDailyDigest:
     # Scenario: Positive chapter movement exists only on rows with no cost truth.
     # Expected: Digest refuses to report a cost-per-delta line.
     def test_cost_digest_waits_for_costed_chapter_delta(self) -> None:
-        from datetime import datetime, timezone
+        from datetime import UTC, datetime
 
-        now_iso = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        now_iso = datetime.now(UTC).isoformat().replace("+00:00", "Z")
         entries = [
             _make_entry(wave_id="w-cost", chapter_delta="+0", cost_usd=1.0),
             _make_entry(wave_id="w-free", chapter_delta="+50"),
@@ -775,9 +775,9 @@ class TestBuildDailyDigest:
     # Scenario: Recent entries include token usage but no explicit cost field.
     # Expected: Digest reports transparent estimated cost instead of waiting.
     def test_estimated_cost_digest(self) -> None:
-        from datetime import datetime, timezone
+        from datetime import UTC, datetime
 
-        now_iso = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        now_iso = datetime.now(UTC).isoformat().replace("+00:00", "Z")
         entries = [
             _make_entry(
                 wave_id="w-est",
@@ -799,9 +799,9 @@ class TestBuildDailyDigest:
     # Scenario: Recent entries include writer/reviewer role-specific token usage.
     # Expected: Digest keeps the pair total and exposes the per-role split.
     def test_role_token_digest(self) -> None:
-        from datetime import datetime, timezone
+        from datetime import UTC, datetime
 
-        now_iso = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        now_iso = datetime.now(UTC).isoformat().replace("+00:00", "Z")
         entries = [
             _make_entry(
                 usage={
@@ -823,9 +823,9 @@ class TestBuildDailyDigest:
     # Scenario: Recent entries include quota fields and disabled pair state.
     # Expected: Digest reports the current quota snapshot and disabled pair list.
     def test_quota_and_disabled_pairs_digest(self, tmp_path: Path) -> None:
-        from datetime import datetime, timezone
+        from datetime import UTC, datetime
 
-        now_iso = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        now_iso = datetime.now(UTC).isoformat().replace("+00:00", "Z")
         state_dir = tmp_path / "state"
         state_dir.mkdir()
         (state_dir / "disabled-pairs.json").write_text(
@@ -855,9 +855,9 @@ class TestBuildDailyDigest:
     # Scenario: Metrics state has active/reactivated pair details but no disabled pairs.
     # Expected: Digest reports no disabled pairs instead of metadata keys.
     def test_metrics_state_without_disabled_pairs_digest(self, tmp_path: Path) -> None:
-        from datetime import datetime, timezone
+        from datetime import UTC, datetime
 
-        now_iso = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        now_iso = datetime.now(UTC).isoformat().replace("+00:00", "Z")
         state_dir = tmp_path / "state"
         state_dir.mkdir()
         (state_dir / "disabled-pairs.json").write_text(
@@ -893,9 +893,9 @@ class TestBuildDailyDigest:
     # Scenario: Metrics state omits the top-level disabled list but has pair statuses.
     # Expected: Digest falls back to disabled statuses in pair details only.
     def test_metrics_pair_detail_disabled_status_digest(self, tmp_path: Path) -> None:
-        from datetime import datetime, timezone
+        from datetime import UTC, datetime
 
-        now_iso = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        now_iso = datetime.now(UTC).isoformat().replace("+00:00", "Z")
         state_dir = tmp_path / "state"
         state_dir.mkdir()
         (state_dir / "disabled-pairs.json").write_text(
@@ -932,9 +932,9 @@ class TestBuildDailyDigest:
     # Scenario: Calendar-mode digest includes only the target day.
     # Expected: Today's entry is excluded when reporting yesterday.
     def test_calendar_mode_is_yesterday(self) -> None:
-        from datetime import datetime, timezone
+        from datetime import UTC, datetime
 
-        now = datetime(2026, 4, 30, 9, 0, tzinfo=timezone.utc)
+        now = datetime(2026, 4, 30, 9, 0, tzinfo=UTC)
         entries = [
             _make_entry(
                 verdict="PASS",
@@ -1044,9 +1044,9 @@ class TestBuildDailyDigest:
     # Scenario: Stuck tasks (3+ fails on same task).
     # Expected: Digest includes stuck task list.
     def test_stuck_tasks(self) -> None:
-        from datetime import datetime, timezone
+        from datetime import UTC, datetime
 
-        now_iso = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        now_iso = datetime.now(UTC).isoformat().replace("+00:00", "Z")
         entries = [
             _make_entry(verdict="FAIL", task_id="stuck-1"),
             _make_entry(verdict="FAIL", task_id="stuck-1"),
@@ -2177,12 +2177,12 @@ class TestWatchLoop:
     # Scenario: Team is stale with no new lines for >30m.
     # Expected: team_stuck notification is attempted.
     def test_watch_stuck_wave_emits_team_stuck(self, tmp_path: Path, capsys) -> None:
-        from datetime import datetime, timezone
+        from datetime import UTC, datetime
 
         class FixedDateTime(datetime):
             @classmethod
             def now(cls, tz=None):
-                fixed = datetime(2026, 1, 1, 8, 0, 0, tzinfo=timezone.utc)
+                fixed = datetime(2026, 1, 1, 8, 0, 0, tzinfo=UTC)
                 return fixed.astimezone(tz) if tz else fixed
 
         ledger = tmp_path / "logs" / "waves.jsonl"

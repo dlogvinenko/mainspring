@@ -20,7 +20,7 @@ from __future__ import annotations
 import json
 import sys
 from collections import Counter, defaultdict
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from statistics import median
 
@@ -164,10 +164,10 @@ def filter_entries(
 
     cutoff: datetime | None = None
     if days is not None:
-        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+        cutoff = datetime.now(UTC) - timedelta(days=days)
     elif since is not None:
         try:
-            cutoff = datetime.fromisoformat(since).replace(tzinfo=timezone.utc)
+            cutoff = datetime.fromisoformat(since).replace(tzinfo=UTC)
         except Exception:
             pass
 
@@ -543,7 +543,7 @@ def update_disabled_pairs_state(
         (previous_auto_disabled | new_auto_disabled | manual_disabled) - reactivated
     )
 
-    timestamp = (now or datetime.now(timezone.utc)).isoformat().replace("+00:00", "Z")
+    timestamp = (now or datetime.now(UTC)).isoformat().replace("+00:00", "Z")
     pair_details = {}
     recommendation_by_pair = {
         str(item["pair"]): item for item in auto_disable.get("pairs", [])

@@ -6,7 +6,7 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -17,7 +17,7 @@ sys.path.insert(0, str(HERE.parent))
 import limits
 
 SCRIPT = str(HERE.parent / "limits.py")
-NOW = datetime(2026, 4, 29, 20, 0, tzinfo=timezone.utc)
+NOW = datetime(2026, 4, 29, 20, 0, tzinfo=UTC)
 
 
 def _snapshot(
@@ -243,7 +243,7 @@ def test_limits_cli_json_round_trips(tmp_path: Path) -> None:
         ledger,
         [
             {
-                "ts": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                "ts": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
                 "wave_id": "w-est",
                 "task_id": "costed",
                 "model": "gpt-5.5",
