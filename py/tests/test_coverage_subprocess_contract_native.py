@@ -44,13 +44,20 @@ def call(fn):
     except (UnicodeError,LookupError,subprocess.SubprocessError) as error:
         return {"kind":type(error).__name__}
 original=subprocess.run
+in_process_calls=0
+original_helper=gate._run_python_script_in_process
+def counted_helper(*args,**kwargs):
+    global in_process_calls
+    in_process_calls+=1
+    return original_helper(*args,**kwargs)
+gate._run_python_script_in_process=counted_helper
 expected=call(original)
 reference_cwd=Path.cwd()==old
 with gate._trace_python_subprocesses(folder):
     actual=call(subprocess.run)
 actual_cwd=Path.cwd()==old
 os.chdir(old)
-print(json.dumps({"case":payload["case"],"genuine":expected,"intercepted":actual,"genuine_parent_cwd_preserved":reference_cwd,"intercepted_parent_cwd_preserved":actual_cwd,"contract_match":expected==actual and reference_cwd==actual_cwd}))
+print(json.dumps({"case":payload["case"],"genuine":expected,"intercepted":actual,"genuine_parent_cwd_preserved":reference_cwd,"intercepted_parent_cwd_preserved":actual_cwd,"contract_match":expected==actual and reference_cwd==actual_cwd,"in_process_calls":in_process_calls}))
 
 """
 
@@ -64,14 +71,16 @@ _NATIVE_CONTRACT_CASES = json.loads(r"""
       "text": true,
       "check": true,
       "_synthetic_env_cwd": true
-    }
+    },
+    "expected_in_process_calls": 1
   },
   {
     "case": "control_bytes",
     "body": "import sys\nsys.stdout.buffer.write(b\"a\\r\\nb\\rc\\n\\x00\")\nsys.stderr.buffer.write(b\"err\\x00\")\n",
     "options": {
       "capture_output": true
-    }
+    },
+    "expected_in_process_calls": 1
   },
   {
     "case": "control_check",
@@ -80,7 +89,8 @@ _NATIVE_CONTRACT_CASES = json.loads(r"""
       "capture_output": true,
       "text": true,
       "check": true
-    }
+    },
+    "expected_in_process_calls": 1
   },
   {
     "case": "timeout",
@@ -89,7 +99,8 @@ _NATIVE_CONTRACT_CASES = json.loads(r"""
       "capture_output": true,
       "text": true,
       "timeout": 0.05
-    }
+    },
+    "expected_in_process_calls": 0
   },
   {
     "case": "cwd_success",
@@ -97,7 +108,8 @@ _NATIVE_CONTRACT_CASES = json.loads(r"""
     "options": {
       "capture_output": true,
       "text": true
-    }
+    },
+    "expected_in_process_calls": 1
   },
   {
     "case": "cwd_check_error",
@@ -106,7 +118,8 @@ _NATIVE_CONTRACT_CASES = json.loads(r"""
       "capture_output": true,
       "text": true,
       "check": true
-    }
+    },
+    "expected_in_process_calls": 1
   },
   {
     "case": "newline_text",
@@ -114,7 +127,8 @@ _NATIVE_CONTRACT_CASES = json.loads(r"""
     "options": {
       "capture_output": true,
       "text": true
-    }
+    },
+    "expected_in_process_calls": 1
   },
   {
     "case": "newline_universal",
@@ -122,7 +136,8 @@ _NATIVE_CONTRACT_CASES = json.loads(r"""
     "options": {
       "capture_output": true,
       "universal_newlines": true
-    }
+    },
+    "expected_in_process_calls": 1
   },
   {
     "case": "encoding",
@@ -130,7 +145,8 @@ _NATIVE_CONTRACT_CASES = json.loads(r"""
     "options": {
       "capture_output": true,
       "encoding": "latin-1"
-    }
+    },
+    "expected_in_process_calls": 0
   },
   {
     "case": "errors",
@@ -138,7 +154,8 @@ _NATIVE_CONTRACT_CASES = json.loads(r"""
     "options": {
       "capture_output": true,
       "errors": "replace"
-    }
+    },
+    "expected_in_process_calls": 0
   },
   {
     "case": "bad_encoding",
@@ -146,7 +163,8 @@ _NATIVE_CONTRACT_CASES = json.loads(r"""
     "options": {
       "capture_output": true,
       "encoding": "invalid-synthetic-codec"
-    }
+    },
+    "expected_in_process_calls": 0
   },
   {
     "case": "conflicting_text_flags",
@@ -155,7 +173,38 @@ _NATIVE_CONTRACT_CASES = json.loads(r"""
       "capture_output": true,
       "text": true,
       "universal_newlines": false
-    }
+    },
+    "expected_in_process_calls": 0
+  },
+  {
+    "case": "explicit_stdout_pipe",
+    "body": "import sys\nsys.stdout.buffer.write(b\"a\\r\\nb\\rc\\n\")\nsys.stderr.buffer.write(b\"x\\r\\ny\\rz\\n\")\n",
+    "options": {
+      "stdout": -1,
+      "stderr": null,
+      "text": true
+    },
+    "expected_in_process_calls": 0
+  },
+  {
+    "case": "explicit_stderr_stdout",
+    "body": "import sys\nsys.stdout.buffer.write(b\"a\\r\\nb\\rc\\n\")\nsys.stderr.buffer.write(b\"x\\r\\ny\\rz\\n\")\n",
+    "options": {
+      "stdout": -1,
+      "stderr": -2,
+      "text": true
+    },
+    "expected_in_process_calls": 0
+  },
+  {
+    "case": "explicit_both_pipe",
+    "body": "import sys\nsys.stdout.buffer.write(b\"a\\r\\nb\\rc\\n\")\nsys.stderr.buffer.write(b\"x\\r\\ny\\rz\\n\")\n",
+    "options": {
+      "stdout": -1,
+      "stderr": -1,
+      "text": true
+    },
+    "expected_in_process_calls": 1
   }
 ]
 """)
@@ -185,6 +234,7 @@ def test_intercept_matches_genuine_subprocess_contract_in_bounded_child(tmp_path
     assert result.returncode == 0, result.stderr
     observed = json.loads(result.stdout)
     assert observed["contract_match"], observed
+    assert observed["in_process_calls"] == case["expected_in_process_calls"], observed
 
 
 @pytest.mark.parametrize(
@@ -230,3 +280,23 @@ def test_fallback_observability_does_not_weaken_coverage_threshold(
     )
     assert report.threshold == 80
     assert report.passed is observed
+
+
+@pytest.mark.parametrize("exceptional", [False, True])
+def test_trace_context_restores_run_identity_on_each_exit(tmp_path, exceptional):
+    before = subprocess.run
+    try:
+        if exceptional:
+            with (
+                pytest.raises(RuntimeError, match="synthetic context exit"),
+                coverage_gate._trace_python_subprocesses(tmp_path),
+            ):
+                assert subprocess.run is not before
+                raise RuntimeError("synthetic context exit")
+        else:
+            with coverage_gate._trace_python_subprocesses(tmp_path):
+                assert subprocess.run is not before
+        assert subprocess.run is before
+    finally:
+        # Keep a failed synthetic mutant from contaminating later test cases.
+        subprocess.run = before
