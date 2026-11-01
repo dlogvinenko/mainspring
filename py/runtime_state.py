@@ -136,7 +136,13 @@ def cmd_runtime_summary(state_dir: str) -> None:
                 return None
         skill = skill_state.get("skill") or skill_state.get("initialized_mode")
         if skill:
-            return root / f"{skill}-state.json"
+            candidate = root / f"{skill}-state.json"
+            try:
+                _resolve_state_child_path(root, str(candidate.absolute()))
+            except ValueError as exc:
+                warnings.append(str(exc))
+                return None
+            return candidate
         return None
 
     session = _read_json(root / "session.json") or {}
@@ -241,6 +247,8 @@ def cmd_repair(state_dir: str, dry_run: bool = False, force: bool = False) -> No
             else root
             / f"{skill.get('skill') or skill.get('initialized_mode', 'unknown')}-state.json"
         )
+        if not initialized:
+            _resolve_state_child_path(root, str(mode_path.absolute()))
     except ValueError as exc:
         print(f"{exc}; refusing repair.")
         raise SystemExit(2) from exc

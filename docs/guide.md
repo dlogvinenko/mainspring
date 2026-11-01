@@ -569,6 +569,13 @@ metadata and must not be removed/replaced by repair. Version cutover and rollbac
 require [all-invocation and waiter drain](#coordinated-runtime-lock-updates), not
 only a successful `stop`, `status` or `doctor` check.
 
+Legacy skill/mode-derived state paths are checked within the selected runtime
+state directory before reading mode data or repairing it. Invalid outside
+references are refused before use, including force, dry-run, missing-target and
+nonstale cases. Explicit contained paths keep priority, and valid contained or
+nested labels keep their existing behavior. This is stored-path containment,
+with no new state schema or live-process policy.
+
 | Need | Run | Effect |
 | --- | --- | --- |
 | Global live view | `mainspring hud` | Read-only live dashboard for every discovered run. |
