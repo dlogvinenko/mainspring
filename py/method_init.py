@@ -93,9 +93,9 @@ def template_path(root: Path) -> Path:
 
 
 def render_template(template: str, name: str) -> str:
-    rendered = template.replace("{{Project / Scope name}}", name)
-    rendered = rendered.replace("{{Project}}", name)
-    return rendered
+    return re.sub(
+        r"\{\{Project / Scope name\}\}|\{\{Project\}\}", lambda match: name, template
+    )
 
 
 def _find_taskmaster() -> str | None:

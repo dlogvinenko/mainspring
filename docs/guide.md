@@ -193,7 +193,7 @@ These commands shape the backlog before autonomous work starts.
 
 | Need | Command | What it does |
 | --- | --- | --- |
-| Initialize Method docs | `mainspring init checkout-redesign` | Create starter PRD docs under `docs/checkout-redesign/`. |
+| Initialize Method docs | `mainspring init checkout-redesign` | Create starter PRD docs under `docs/checkout-redesign/`. The normalized display name is inserted once; marker-like text and backslashes remain literal. |
 | Force Method docs overwrite | `mainspring init checkout-redesign --force` | Overwrite starter docs intentionally. |
 | Validate a PRD | `mainspring validate-prd docs/prd.md` | Validate the Product Requirements Document before decomposition. |
 | Validate a PRD as JSON | `mainspring validate-prd docs/prd.md --format json` | Emit validation details for scripts and agents. |

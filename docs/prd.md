@@ -83,9 +83,9 @@ they were not revalidated as current results in this draft.
 | Source shell syntax                     | passes                                             | `bash -n mainspring.sh lib/*.sh`                         |
 | Source shell lint                       | passes                                             | `shellcheck -S warning mainspring.sh lib/*.sh`           |
 | Python lint                             | 410 baseline findings, zero additions                | Ruff 0.17.3 comparison with public `4d365cc` on 2026-10-30 |
-| Python format                           | passes, 114 files already formatted                 | `ruff format --check py`                                 |
+| Python format                           | passes, 115 files already formatted                 | `ruff format --check py`                                 |
 | Active embedded Python in shell paths   | 0 heredoc / inline-parser hits                     | `rg` scan for `python3 - <<` and `python3 -c` in shell    |
-| Pytest suite files                      | 63                                                 | `find py/tests -name 'test_*.py'` plus count             |
+| Pytest suite files                      | 64                                                 | `find py/tests -name 'test_*.py'` plus count             |
 | Bats suite files                        | 14                                                 | `find tests/bats -name '*.bats'` plus count              |
 | Python line coverage                    | 90.6% (coverage gate pass)                         | `make coverage` on 2026-06-16                           |
 | Full local gate                         | blocked: 1149 Python tests passed, 1 skipped; 223 Bats passed (doctor fixtures isolate inherited interpreter overrides); HUD/docs-site and package smoke pass; 410 baseline Ruff findings; known filelock findings resolved in the validated public dependency graphs | separate local gates on 2026-10-30; `make all` stops at baseline lint |
@@ -541,7 +541,7 @@ tooling without moving them out of Taskmaster.
 The Method package source lives under `method/` and ships as part of the Mainspring OSS release. CLI commands in this phase wrap those templates and validators.
 
 - [x] **P4.5-1 `mainspring init <name>`.** ✅ DONE 2026-05-03. `py/method_init.py` scaffolds `docs/<slug>/prd.md` from the Method PRD template, creates `.mainspring/state` and `.mainspring/logs`, records `active-prd.json`, initializes Taskmaster when available, and fails closed when the template or Taskmaster bootstrap is missing. Verified by `py/tests/test_method_init.py` and top-level Bats dispatch coverage.
-  - Create `docs/<name>/prd.md` from `method/templates/prd.md` with `{{Project}} = <name>` substituted.
+  - Create `docs/<name>/prd.md` from `method/templates/prd.md` by replacing original exact markers once. The chosen display name stays literal, including marker-like text and backslashes; normalization, slug, path, overwrite and Taskmaster policies are unchanged.
   - Run `task-master init` if `.taskmaster/` doesn't exist.
   - Create `.mainspring/` runtime state dir.
   - Print next-step hints (`run mainspring doctor`, `apply the Method to write the PRD`, etc.).
