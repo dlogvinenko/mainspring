@@ -794,6 +794,7 @@ def test_cli_update_disabled_pairs_writes_state(tmp_path: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -895,6 +896,7 @@ def test_cli_json_output(tmp_path: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 0
     data = json.loads(result.stdout)
@@ -917,6 +919,7 @@ def test_cli_routing_json_output(tmp_path: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 0
     data = json.loads(result.stdout)
@@ -953,6 +956,7 @@ def test_cli_routing_defaults_to_fourteen_day_window(tmp_path: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -969,6 +973,7 @@ def test_cli_no_args() -> None:
         [sys.executable, str(HERE.parent / "metrics.py")],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 2
 
@@ -982,6 +987,7 @@ def test_cli_empty_ledger(tmp_path: Path) -> None:
         [sys.executable, str(HERE.parent / "metrics.py"), str(ledger), "--days", "7"],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 0
     assert "Total waves:    0" in result.stdout
@@ -994,6 +1000,7 @@ def test_cli_disabled_pairs_requires_state_path() -> None:
         [sys.executable, str(HERE.parent / "metrics.py"), "disabled-pairs"],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 2
@@ -1008,6 +1015,7 @@ def test_cli_rejects_unknown_flag(tmp_path: Path) -> None:
         [sys.executable, str(HERE.parent / "metrics.py"), str(ledger), "--unknown"],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 2
@@ -1049,6 +1057,7 @@ def test_cli_routing_update_uses_default_state_dir(tmp_path: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 0

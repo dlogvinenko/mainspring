@@ -254,6 +254,7 @@ def test_cli_list() -> None:
         [sys.executable, str(HERE.parent / "failure_taxonomy.py"), "list"],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 0
     lines = result.stdout.strip().splitlines()
@@ -273,6 +274,7 @@ def test_cli_validate_known() -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 0
 
@@ -289,6 +291,7 @@ def test_cli_validate_unknown_leaf() -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 0
     assert "warning" in result.stderr.lower()
@@ -306,6 +309,7 @@ def test_cli_validate_invalid() -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 1
     assert "no recognized prefix" in result.stderr
@@ -323,6 +327,7 @@ def test_cli_validate_empty() -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 0
 
@@ -339,6 +344,7 @@ def test_cli_prefix() -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 0
     assert result.stdout.strip() == "review"
@@ -356,6 +362,7 @@ def test_cli_normalize() -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 0
     assert result.stdout.strip() == "review:gate_failed"
@@ -373,6 +380,7 @@ def test_cli_action() -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 0
     assert result.stdout.strip() == "solo_fallback"
@@ -394,6 +402,7 @@ def test_cli_usage_errors(args: list[str], message: str) -> None:
         [sys.executable, str(HERE.parent / "failure_taxonomy.py"), *args],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 2

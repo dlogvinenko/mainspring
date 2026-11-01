@@ -265,6 +265,7 @@ def test_cli_valid_file(tmp_path: Path) -> None:
         [sys.executable, SCRIPT, str(prd)],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 0
     assert "validation passed" in result.stdout
@@ -279,6 +280,7 @@ def test_cli_json_failure(tmp_path: Path) -> None:
         [sys.executable, SCRIPT, str(prd), "--format", "json"],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 1
     assert "placeholder:unresolved" in result.stdout
@@ -310,6 +312,7 @@ def test_cli_usage_and_error_paths(
         [sys.executable, SCRIPT, *resolved_args],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == returncode
