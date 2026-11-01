@@ -20,6 +20,10 @@ Everything starts from the same operator CLI people use day to day.
 
 ## Install Mainspring
 
+**Runtime-lock protocol update:** before changing an in-use source checkout or reinstalling a persistent-guard build, close launch intake and account for every old invocation and
+pending waiter sharing the state paths. Old and new protocols cannot coexist; rollback requires the same drain. Follow the [coordinated
+guide](docs/guide.md#coordinated-runtime-lock-updates). A `.guard` file is normal: never remove it as stale-file repair or use PID-file absence as proof that the domain is quiet.
+
 ```bash
 python3 -m pip install --user pipx
 python3 -m pipx ensurepath  # Homebrew: brew install pipx && pipx ensurepath
@@ -30,20 +34,16 @@ make install-user
 
 Check the install with `command -v mainspring`, `mainspring --version`, and `mainspring --help`.
 
-If `command -v mainspring` prints nothing, make sure the pipx app directory
-`~/.local/bin` is on your shell PATH, then reopen the terminal.
-`mainspring --help` is the short operator help; `mainspring help --full` prints the full CLI contract.
+If `command -v mainspring` prints nothing, make sure the pipx app directory `~/.local/bin` is on your shell PATH, then reopen the terminal. `mainspring --help` is the
+short operator help; `mainspring help --full` prints the full CLI contract.
 
-After local Mainspring source changes, rerun `make install-user` from this
-checkout to refresh the global command. The target recreates the pipx app
-environment before installing, so stale optional provider dependencies do not
-survive an update. Provider installs require patched filelock and may select an
-earlier allowed LiteLLM: `MAINSPRING_PROVIDERS_PYTHON=python3.13 make install-user-providers` (Python 3.11-3.13).
+After local Mainspring source changes, rerun `make install-user` from this checkout to refresh the global command. The target recreates the pipx app environment before
+installing, so stale optional provider dependencies do not survive an update. Provider installs require patched filelock and may select an earlier allowed LiteLLM:
+`MAINSPRING_PROVIDERS_PYTHON=python3.13 make install-user-providers` (Python 3.11-3.13).
 
-Source checkouts can also run `./mainspring.sh --project /path/to/your-project`.
-The packaged `mainspring` command uses its pipx Python; a project's `.venv` cannot hide HUD dependencies.
-Optional `fnm` bootstrap discards failed helper output and keeps the existing directory fallback. The v1 install path
-is source install until package-manager channels are actually published. Generated formula URL/homepage values stay literal Ruby data.
+Source checkouts can also run `./mainspring.sh --project /path/to/your-project`. The packaged `mainspring` command uses its pipx Python; a project's `.venv` cannot hide
+HUD dependencies. Optional `fnm` bootstrap discards failed helper output and keeps the existing directory fallback. The v1 install path is source install until
+package-manager channels are actually published. Generated formula URL/homepage values stay literal Ruby data.
 
 ## Why It Exists
 

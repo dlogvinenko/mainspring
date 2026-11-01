@@ -83,9 +83,9 @@ they were not revalidated as current results in this draft.
 | Source shell syntax                     | passes                                             | `bash -n mainspring.sh lib/*.sh`                         |
 | Source shell lint                       | passes                                             | `shellcheck -S warning mainspring.sh lib/*.sh`           |
 | Python lint                             | 410 baseline findings, zero additions                | Ruff 0.17.3 comparison with public `4d365cc` on 2026-10-30 |
-| Python format                           | passes, 111 files already formatted                 | `ruff format --check py`                                 |
+| Python format                           | passes, 113 files already formatted                 | `ruff format --check py`                                 |
 | Active embedded Python in shell paths   | 0 heredoc / inline-parser hits                     | `rg` scan for `python3 - <<` and `python3 -c` in shell    |
-| Pytest suite files                      | 61                                                 | `find py/tests -name 'test_*.py'` plus count             |
+| Pytest suite files                      | 62                                                 | `find py/tests -name 'test_*.py'` plus count             |
 | Bats suite files                        | 14                                                 | `find tests/bats -name '*.bats'` plus count              |
 | Python line coverage                    | 90.6% (coverage gate pass)                         | `make coverage` on 2026-06-16                           |
 | Full local gate                         | blocked: 1149 Python tests passed, 1 skipped; 223 Bats passed (doctor fixtures isolate inherited interpreter overrides); HUD/docs-site and package smoke pass; 410 baseline Ruff findings; known filelock findings resolved in the validated public dependency graphs | separate local gates on 2026-10-30; `make all` stops at baseline lint |
@@ -325,30 +325,27 @@ the default model/readiness contract, and covering it with registry tests.
 Provider engines must never silently fall back to another provider, model, or
 reviewer.
 
-#### `acquire_lock` / `release_lock` — flock on fd 9
+#### `acquire_lock` / `release_lock`: persistent guard protocol
 
-```bash
-# lib/lock.sh
-acquire_lock() {
-  mkdir -p "$(dirname "$LOCK_FILE")"
-  exec 9>"$LOCK_FILE"
-  if ! flock -n 9; then
-    local existing_pid
-    existing_pid="$(cat "$LOCK_FILE" 2>/dev/null || true)"
-    echo "Mainspring already running (pid ${existing_pid:-unknown}); stop it or wait." >&2
-    exit 1
-  fi
-  echo "$$" >&9
-}
-release_lock() {
-  exec 9>&- 2>/dev/null || true
-  if [ -f "$LOCK_FILE" ] && [ "$(cat "$LOCK_FILE" 2>/dev/null || true)" = "$$" ]; then
-    rm -f "$LOCK_FILE"
-  fi
-}
-```
+The canonical implementation is [lib/lock.sh](../lib/lock.sh), with the existing Python `fcntl` fallback in
+[py/fd_lock.py](../py/fd_lock.py). It opens descriptor 9 on `${LOCK_FILE}.guard`, takes the nonblocking backend lock,
+then writes advisory PID metadata to `LOCK_FILE`. Release removes only its own PID while the guard is still held,
+unlocks and brace-scopes the descriptor-close stderr redirection. Later caller and EXIT-trap diagnostics remain visible.
 
-The kernel auto-releases fd 9 on any exit (including SIGKILL), so the script can never leave a stale lock. The PID file content is purely advisory for human inspection.
+The guard inode persists across releases and must never be unlinked or replaced while any owner
+or waiter may have it open. OS descriptor lifetime, including relevant children, controls lock
+lifetime; the PID text and guard existence do not certify ownership or operational quiescence.
+
+Adoption and rollback require the [coordinated cutover](guide.md#coordinated-runtime-lock-updates): close intake, account
+for all old invocations and pending/preopened contenders, obtain owner-confirmed quiescence, then switch every allowed route
+to one build. Concurrent old/new protocols are unsupported. Rollback drains the new cohort and its waiters before restoring
+old routes; it is never a one-launcher hot revert. No automatic PID scanner, stop/drain or migration framework is implied.
+
+Repository-relative owned-TMP tests preserve original canonical controls and port the deterministic
+lifecycle, stderr, stable-guard and unsupported-mixed oracles. The independent CI job requires
+actual Linux `flock` evidence and keeps macOS `fcntl` controls. Stubbed status mappings and missing
+local native binaries are not Linux correctness evidence; no Linux result is asserted before a real
+source-bound run. These private/CI checks do not establish a user runtime drain.
 
 #### `check_write_scope` — post-wave path guard
 
@@ -907,8 +904,9 @@ done > .mainspring/logs/waves.jsonl
 
 **Recover:** run `mainspring --repair-state --dry-run` first. If the preview
 only touches stale runtime bookkeeping, run `mainspring --repair-state --force`,
-then resume normal flow. Because flock is fd-based, the OS already released the
-lock when the host died.
+then resume normal flow only after the affected owners account for pending
+invocations and children. The persistent guard file is not a cleanup target;
+its existence or advisory PID cannot prove that all descriptors are closed.
 
 ### Runaway loop (wave count climbing without progress)
 
@@ -926,15 +924,17 @@ reports stale worktrees, run `git worktree prune`. For team backend state, use
 heads that Mainspring reports. Avoid broad tmux cleanup; kill only a specific
 session after manually confirming it is unrelated to active work.
 
-### Lock without owner (rare; only happens if `flock` is unavailable on the platform)
+### Lock contention with unclear PID metadata
 
-**Detect:** `mainspring` exits immediately with "already running" but no process matches the recorded pid.
+**Detect:** acquisition reports contention while advisory PID metadata is absent
+or no longer explains the owner. Neither PID absence nor a process-name scan
+proves the domain is quiet; a pending/preopened invocation can still matter.
 
-**Recover:** run `mainspring --repair-state --dry-run`, then
-`mainspring --repair-state --force` only if the preview identifies the lock as
-stale. Mainspring will re-acquire on next launch. If this happens repeatedly,
-`mainspring doctor` should be flagging missing flock support; install
-`util-linux` or the platform equivalent.
+**Recover:** keep launch intake closed and use the bounded launcher-owner
+procedure in the [coordinated guide](guide.md#coordinated-runtime-lock-updates).
+Inspect backend diagnostics without deleting or replacing `.guard`. The Python
+`fcntl` fallback is supported when native `flock` is unavailable; missing a local
+binary does not prove a universal lock failure or safe migration.
 
 ### Telegram daemon stuck
 

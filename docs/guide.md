@@ -83,6 +83,49 @@ Release formula generation preserves accepted URL/homepage values as literal
 Ruby data, including quotes, backslashes, controls and interpolation text.
 Existing stripping, validators and CLI behavior remain unchanged.
 
+## Coordinated runtime-lock updates
+
+The runtime protocol locks the persistent `${LOCK_FILE}.guard` inode. The
+`LOCK_FILE` contents are advisory PID metadata, not kernel ownership evidence.
+Release removes only its own advisory PID while still holding the guard, then
+unlocks and closes its descriptor without redirecting the caller's stderr.
+Guard existence does not mean a process is running. Never remove or replace a
+guard while an invocation or waiter may have it open.
+
+This is a coordinated version change, not a zero-downtime or mixed-version
+migration. Source edits can affect an active editable installation immediately.
+Do not update one launch route while another can still run the old protocol.
+
+1. Bound the affected domain: state paths, users/hosts sharing them, source trees,
+   editable/package overrides, wrappers and automated/interactive launch owners.
+   If that inventory cannot be bounded, defer activation.
+2. Close all identified launch intake outside both locks, including restarters
+   and pending interactive launches. The new guard does not exclude old code.
+3. Let each old invocation finish or use its owning controller's scoped stop.
+   Account for pending/preopened waiters and relevant children that can retain
+   descriptors or relaunch. Require authoritative terminal outcomes; a PID-file
+   check, process-name scan, signal acknowledgment or delay is insufficient.
+4. Obtain the launch owners' explicit quiescent-domain confirmation. An unknown
+   contender keeps intake closed; `status`, `doctor`, lock acquisition and PID
+   absence cannot establish this confirmation.
+5. With intake still closed, update all allowed routes to one reviewed build.
+   Verify resolved source/payload hashes, not just package version. Keep old
+   routes unavailable through their owners' existing controls; preserve guards.
+6. After required isolated/CI validation, reopen one controlled new launcher,
+   then the approved domain. Record its build and same-guard evidence.
+7. Rollback repeats the cutover: close intake, obtain terminal/quiescent evidence
+   for every new invocation and waiter, then switch all routes together. Never
+   hot-revert one old launcher beside a new cohort; leave guard evidence intact.
+
+The independent lock-protocol CI job runs outside `make all`, so unrelated lint
+failure cannot hide backend evidence. Linux requests and logs a real `flock`
+executable and version, then exercises the native branch; absence fails rather
+than skips. macOS exercises the actual Python `fcntl` helper. Synthetic return
+status controls are labeled as such and never substitute for native evidence.
+No cross-backend, universal process/descriptor discovery or live install safety
+claim follows from these tests. Any supported mixed-backend claim needs separate
+actual evidence. This draft does not assert a Linux CI result before it exists.
+
 ## Everyday Commands
 
 These are the commands most operators need day to day.
@@ -521,7 +564,10 @@ Actual display/output I/O errors still fail.
 ## Recovery Commands
 
 Start with read-only inspection. Do not resume saved work or launch a new wave
-until the current state is understood.
+until the current state is understood. A persistent `.guard` is not stale PID
+metadata and must not be removed/replaced by repair. Version cutover and rollback
+require [all-invocation and waiter drain](#coordinated-runtime-lock-updates), not
+only a successful `stop`, `status` or `doctor` check.
 
 | Need | Run | Effect |
 | --- | --- | --- |
