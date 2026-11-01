@@ -152,7 +152,9 @@ def test_regression_summary_must_not_read_fallback_outside(owned_case, field, st
     event = call(owned_case, "cmd_runtime_summary", target)
     assert "owned-target-phase" not in event["stdout"]
     assert "outside runtime state dir" in event["stdout"]
-    assert str(target) not in owned_case[4]["reads"]
+    assert target.resolve() not in {
+        Path(path).resolve() for path in owned_case[4]["reads"]
+    }
 
 
 @pytest.mark.parametrize("field", ["skill", "initialized_mode"])
@@ -166,7 +168,9 @@ def test_regression_force_must_not_write_fallback_outside(
     assert event["before_sha256"][str(target)] == event["after_sha256"][str(target)]
     assert event["function_exit_code"] == 2
     assert "outside runtime state dir" in event["stdout"]
-    assert str(target) not in owned_case[4]["reads"]
+    assert target.resolve() not in {
+        Path(path).resolve() for path in owned_case[4]["reads"]
+    }
 
 
 @pytest.mark.parametrize("field", ["skill", "initialized_mode"])
@@ -210,7 +214,7 @@ def test_control_explicit_outside_path_is_refused(owned_case, style, command):
     event = call(owned_case, command, target, **kwargs)
     assert "outside runtime state dir" in event["stdout"]
     assert event["before_sha256"] == event["after_sha256"]
-    assert str(target) not in calls["reads"]
+    assert target.resolve() not in {Path(path).resolve() for path in calls["reads"]}
     assert event["function_exit_code"] == (2 if command == "cmd_repair" else 0)
 
 
@@ -269,6 +273,11 @@ def test_relative_candidate_outside_is_not_retargeted_to_nested_collision(
     assert "outside runtime state dir" in event["stdout"]
     assert event["before_sha256"] == event["after_sha256"]
     assert shadow_before == digest(shadow)
+    resolved_reads = {Path(path).resolve() for path in owned_case[4]["reads"]}
+    assert not ({shadow.resolve(), target.resolve()} & resolved_reads)
+    assert "owned-inside-shadow" not in event["stdout"]
+    if command == "cmd_runtime_summary":
+        assert "mode-state:" not in event["stdout"]
 
 
 @pytest.mark.parametrize("command", ["cmd_runtime_summary", "cmd_repair"])
@@ -310,7 +319,9 @@ def test_outside_reference_refuses_before_read_in_dry_or_nonforce(
     event = call(owned_case, "cmd_repair", target, dry_run=dry_run)
     assert event["function_exit_code"] == 2
     assert "outside runtime state dir" in event["stdout"]
-    assert str(target) not in owned_case[4]["reads"]
+    assert target.resolve() not in {
+        Path(path).resolve() for path in owned_case[4]["reads"]
+    }
     assert event["before_sha256"] == event["after_sha256"]
 
 
@@ -326,7 +337,9 @@ def test_missing_outside_reference_refuses_before_read(owned_case, force, dry_ru
     event = call(owned_case, "cmd_repair", target, force=force, dry_run=dry_run)
     assert event["function_exit_code"] == 2
     assert "outside runtime state dir" in event["stdout"]
-    assert str(target) not in owned_case[4]["reads"]
+    assert target.resolve() not in {
+        Path(path).resolve() for path in owned_case[4]["reads"]
+    }
     assert event["before_sha256"] == event["after_sha256"]
     assert not target.exists()
 
@@ -342,5 +355,7 @@ def test_nonstale_outside_reference_refuses_before_read(owned_case, style):
     event = call(owned_case, "cmd_repair", target, force=True)
     assert event["function_exit_code"] == 2
     assert "outside runtime state dir" in event["stdout"]
-    assert str(target) not in owned_case[4]["reads"]
+    assert target.resolve() not in {
+        Path(path).resolve() for path in owned_case[4]["reads"]
+    }
     assert event["before_sha256"] == event["after_sha256"]
