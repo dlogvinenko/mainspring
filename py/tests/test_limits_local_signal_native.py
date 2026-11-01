@@ -195,3 +195,29 @@ def test_registered_provider_blockers_remain_not_configured(offline):
     assert row["status"] == "not-configured"
     assert any("litellm" in value for value in row["readiness_blockers"])
     assert any("OPENAI_API_KEY" in value for value in row["readiness_blockers"])
+
+
+def test_owned_primary_only_remaining_is_a_readiness_signal(offline):
+    folder = offline.home / ".codex/sessions"
+    folder.mkdir(parents=True)
+    raw = {
+        "payload": {
+            "rate_limits": {
+                "primary": {"used_percent": 25.0, "window_minutes": 300},
+            }
+        }
+    }
+    (folder / "owned-primary-only.jsonl").write_text(json.dumps(raw) + "\n")
+
+    snapshot, row, _text = render(offline)
+
+    quota = snapshot["quota"]
+    assert quota["short"]["remaining_pct"] == 75.0
+    assert quota["long"]["remaining_pct"] is None
+    assert quota["status"] == quota["plan"] == "unknown"
+    assert quota["short"]["reset"] == quota["long"]["reset"] == "unknown"
+    assert row["short"]["remaining_pct"] == 75.0
+    assert row["long"]["remaining_pct"] is None
+    assert row["quota_status"] == row["plan"] == "unknown"
+    assert row["short"]["reset"] == row["long"]["reset"] == "unknown"
+    assert row["status"] == "ready" and row["readiness_blockers"] == []
