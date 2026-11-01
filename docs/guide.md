@@ -576,6 +576,10 @@ nonstale cases. Explicit contained paths keep priority, and valid contained or
 nested labels keep their existing behavior. This is stored-path containment,
 with no new state schema or live-process policy.
 
+Runtime summaries shorten an absolute mode-state path only when it is inside the
+current directory. Similarly prefixed sibling paths stay absolute; relative
+paths retain their existing display. State selection and warnings are unchanged.
+
 | Need | Run | Effect |
 | --- | --- | --- |
 | Global live view | `mainspring hud` | Read-only live dashboard for every discovered run. |

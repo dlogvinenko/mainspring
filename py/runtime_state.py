@@ -172,7 +172,7 @@ def cmd_runtime_summary(state_dir: str) -> None:
         cwd = Path.cwd()
         display = (
             mode_path.relative_to(cwd)
-            if mode_path.is_absolute() and str(mode_path).startswith(str(cwd))
+            if mode_path.is_absolute() and mode_path.is_relative_to(cwd)
             else mode_path
         )
         if mode_state:
