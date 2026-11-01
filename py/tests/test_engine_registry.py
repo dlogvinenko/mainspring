@@ -15,7 +15,7 @@ import pytest
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 
-from engines import claude, codex, registry  # noqa: E402
+from engines import claude, codex, registry
 
 SCRIPT = str(HERE.parent / "engine_registry.py")
 LEGACY_ENV_PREFIX = "OMX" + "_LOOP_"

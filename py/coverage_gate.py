@@ -90,7 +90,7 @@ def iter_source_files(py_dir: Path) -> list[Path]:
 
 def executable_lines(path: Path) -> set[int]:
     """Return executable source lines using the same parser as stdlib trace."""
-    raw = trace._find_executable_linenos(str(path))  # noqa: SLF001
+    raw = trace._find_executable_linenos(str(path))
     lines: set[int] = set()
     for line in raw:
         try:

@@ -13,7 +13,7 @@ import pytest
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 
-from backlog_source import BacklogSourceError, TaskmasterJsonBacklogSource  # noqa: E402
+from backlog_source import BacklogSourceError, TaskmasterJsonBacklogSource
 
 
 def _write_tasks(tmp_path: Path, tasks: list[dict]) -> Path:

@@ -16,7 +16,7 @@ import pytest
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 
-import runtime_state  # noqa: E402
+import runtime_state
 
 SCRIPT = str(HERE.parent / "runtime_state.py")
 

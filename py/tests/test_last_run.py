@@ -14,7 +14,7 @@ import pytest
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 
-import last_run  # noqa: E402
+import last_run
 
 SCRIPT = str(HERE.parent / "last_run.py")
 

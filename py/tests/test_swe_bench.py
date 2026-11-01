@@ -12,7 +12,7 @@ import pytest
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 
-from bench import swe_bench  # noqa: E402
+from bench import swe_bench
 
 
 def write_predictions(path: Path) -> None:

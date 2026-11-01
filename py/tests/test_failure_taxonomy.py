@@ -12,7 +12,7 @@ import pytest
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 
-import failure_taxonomy  # noqa: E402
+import failure_taxonomy
 
 
 # ── extract_prefix ─────────────────────────────────────────────────────

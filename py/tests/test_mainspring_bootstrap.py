@@ -18,8 +18,8 @@ import pytest
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 
-import mainspring_bootstrap  # noqa: E402
-from engines import registry  # noqa: E402
+import mainspring_bootstrap
+from engines import registry
 
 MAINSPRING_DIR = HERE.parent.parent
 PYPROJECT = MAINSPRING_DIR / "pyproject.toml"

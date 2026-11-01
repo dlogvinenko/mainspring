@@ -14,7 +14,7 @@ import pytest
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 
-import coverage_gate  # noqa: E402
+import coverage_gate
 
 SCRIPT = HERE.parent / "coverage_gate.py"
 

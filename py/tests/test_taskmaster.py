@@ -16,7 +16,7 @@ import pytest
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 
-import taskmaster  # noqa: E402
+import taskmaster
 
 LEGACY_ENV_PREFIX = "OMX" + "_LOOP_"
 

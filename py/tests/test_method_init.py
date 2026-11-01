@@ -14,7 +14,7 @@ import pytest
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 
-import method_init  # noqa: E402
+import method_init
 
 SCRIPT = str(HERE.parent / "method_init.py")
 

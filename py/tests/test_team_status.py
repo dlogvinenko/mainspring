@@ -12,7 +12,7 @@ import pytest
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 
-import team_status  # noqa: E402
+import team_status
 
 SCRIPT = str(HERE.parent / "team_status.py")
 

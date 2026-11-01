@@ -14,7 +14,7 @@ import pytest
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 
-import metrics  # noqa: E402
+import metrics
 
 
 def _make_entry(

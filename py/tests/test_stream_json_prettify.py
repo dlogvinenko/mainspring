@@ -22,7 +22,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 
-import stream_json_prettify as sjp  # noqa: E402
+import stream_json_prettify as sjp
 
 
 def _run(events: list[dict], mode: str, display_path: str | None = None) -> str:

@@ -14,7 +14,7 @@ import pytest
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 
-import limits  # noqa: E402
+import limits
 
 SCRIPT = str(HERE.parent / "limits.py")
 NOW = datetime(2026, 4, 29, 20, 0, tzinfo=timezone.utc)

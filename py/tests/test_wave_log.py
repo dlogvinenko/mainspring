@@ -13,7 +13,7 @@ import pytest
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 
-import wave_log  # noqa: E402
+import wave_log
 
 
 def _set_wave_env(**overrides: str) -> dict[str, str]:

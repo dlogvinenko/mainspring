@@ -14,7 +14,7 @@ import pytest
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 
-import prd_validate  # noqa: E402
+import prd_validate
 
 SCRIPT = str(HERE.parent / "prd_validate.py")
 REPO_ROOT = HERE.parents[1]

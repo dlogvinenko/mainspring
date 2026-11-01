@@ -14,8 +14,8 @@ import pytest
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 
-import engine_quota  # noqa: E402
-from engines._base import EngineInfo  # noqa: E402
+import engine_quota
+from engines._base import EngineInfo
 
 SCRIPT = str(HERE.parent / "engine_quota.py")
 

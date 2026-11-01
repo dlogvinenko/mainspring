@@ -12,7 +12,7 @@ from unittest.mock import MagicMock, patch
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 
-import notify_telegram  # noqa: E402
+import notify_telegram
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────

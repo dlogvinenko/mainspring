@@ -13,7 +13,7 @@ import pytest
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 
-import decompose  # noqa: E402
+import decompose
 
 SCRIPT = str(HERE.parent / "decompose.py")
 

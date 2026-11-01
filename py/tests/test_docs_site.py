@@ -13,7 +13,7 @@ import pytest
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 
-import docs_site  # noqa: E402
+import docs_site
 
 
 REPO_ROOT = HERE.parents[1]

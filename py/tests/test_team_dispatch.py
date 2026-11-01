@@ -16,7 +16,7 @@ import pytest
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 
-import team_dispatch  # noqa: E402
+import team_dispatch
 
 SCRIPT = str(HERE.parent / "team_dispatch.py")
 RUNTIME_ENV_KEYS = (

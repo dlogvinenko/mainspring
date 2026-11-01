@@ -15,7 +15,7 @@ import pytest
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 
-import hud  # noqa: E402
+import hud
 
 SCRIPT = str(HERE.parent / "hud.py")
 MAINSPRING_DIR = HERE.parent.parent
