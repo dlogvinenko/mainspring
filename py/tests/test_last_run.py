@@ -31,6 +31,7 @@ def test_save_outputs_all_keys(tmp_path: Path) -> None:
         capture_output=True,
         text=True,
         env=env,
+        check=False,
     )
     assert result.returncode == 0
     lines = result.stdout.strip().splitlines()
@@ -52,6 +53,7 @@ def test_save_empty_env(tmp_path: Path) -> None:
         capture_output=True,
         text=True,
         env=env,
+        check=False,
     )
     assert result.returncode == 0
     for line in result.stdout.strip().splitlines():
@@ -69,6 +71,7 @@ def test_save_quotes_metacharacters(tmp_path: Path) -> None:
         capture_output=True,
         text=True,
         env=env,
+        check=False,
     )
     assert result.returncode == 0
     # Find MODE line and verify it's safely quoted
