@@ -506,8 +506,11 @@ a time filter, timestamp shape does not exclude rows. A date-only `--since YYYY-
 Logs are written under `.mainspring/logs/`.
 
 Claude stream display ignores malformed typed fields and keeps later valid events.
-Valid writer/reviewer output is mirrored to stdout and the display file. Raw logs
-and text-source rules are unchanged; no assistant/result text fallback is added.
+Valid writer/reviewer output is mirrored to stdout and the display file. The
+formatter owns and closes its UTF-8 append display file on exit, including
+interruptions, while borrowed stdout remains open. Eager creation, flush order
+and I/O errors keep their behavior. Raw logs and text-source rules are unchanged;
+no assistant/result text fallback is added.
 Actual display/output I/O errors still fail.
 
 - `.mainspring/logs/latest.log`: most recent run log.

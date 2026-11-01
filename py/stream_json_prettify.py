@@ -34,11 +34,10 @@ import argparse
 import json
 import os
 import sys
+from contextlib import ExitStack
 
 
-def _make_writer(display_path: str | None):
-    display_fp = open(display_path, "a", encoding="utf-8") if display_path else None
-
+def _make_writer(display_fp):
     def out(text: str) -> None:
         sys.stdout.write(text)
         sys.stdout.flush()
@@ -46,7 +45,7 @@ def _make_writer(display_path: str | None):
             display_fp.write(text)
             display_fp.flush()
 
-    return out, display_fp
+    return out
 
 
 def _handle_event(obj: object, mode: str, out) -> None:
@@ -160,9 +159,13 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     display_path = os.environ.get("CLAUDE_DISPLAY_FILE")
-    out, display_fp = _make_writer(display_path)
-
-    try:
+    with ExitStack() as stack:
+        display_fp = (
+            stack.enter_context(open(display_path, "a", encoding="utf-8"))
+            if display_path
+            else None
+        )
+        out = _make_writer(display_fp)
         for raw in sys.stdin:
             line = raw.strip()
             if not line:
@@ -172,10 +175,6 @@ def main(argv: list[str] | None = None) -> int:
             except Exception:
                 continue
             _handle_event(obj, args.mode, out)
-    finally:
-        if display_fp:
-            display_fp.close()
-
     return 0
 
 
