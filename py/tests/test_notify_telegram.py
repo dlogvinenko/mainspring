@@ -1592,9 +1592,11 @@ class TestCli:
     def test_send_bad_parse_mode_exits(self, capsys) -> None:
         import pytest
 
-        with patch("notify_telegram.send_message") as send_mock:
-            with pytest.raises(SystemExit, match="2"):
-                notify_telegram.main(["send", "hello", "--parse-mode", "ansi"])
+        with (
+            patch("notify_telegram.send_message") as send_mock,
+            pytest.raises(SystemExit, match="2"),
+        ):
+            notify_telegram.main(["send", "hello", "--parse-mode", "ansi"])
 
         send_mock.assert_not_called()
         captured = capsys.readouterr()
@@ -1605,9 +1607,11 @@ class TestCli:
     def test_send_missing_parse_mode_value_exits(self, capsys) -> None:
         import pytest
 
-        with patch("notify_telegram.send_message") as send_mock:
-            with pytest.raises(SystemExit, match="2"):
-                notify_telegram.main(["send", "hello", "--parse-mode"])
+        with (
+            patch("notify_telegram.send_message") as send_mock,
+            pytest.raises(SystemExit, match="2"),
+        ):
+            notify_telegram.main(["send", "hello", "--parse-mode"])
 
         send_mock.assert_not_called()
         captured = capsys.readouterr()
@@ -1618,9 +1622,11 @@ class TestCli:
     def test_send_unknown_flag_exits(self, capsys) -> None:
         import pytest
 
-        with patch("notify_telegram.send_message") as send_mock:
-            with pytest.raises(SystemExit, match="2"):
-                notify_telegram.main(["send", "hello", "--markdown"])
+        with (
+            patch("notify_telegram.send_message") as send_mock,
+            pytest.raises(SystemExit, match="2"),
+        ):
+            notify_telegram.main(["send", "hello", "--markdown"])
 
         send_mock.assert_not_called()
         captured = capsys.readouterr()
@@ -1660,9 +1666,11 @@ class TestCli:
     def test_watch_flag_without_path_exits(self, capsys) -> None:
         import pytest
 
-        with patch("notify_telegram.watch_loop") as watch_loop:
-            with pytest.raises(SystemExit, match="2"):
-                notify_telegram.main(["watch", "--poll"])
+        with (
+            patch("notify_telegram.watch_loop") as watch_loop,
+            pytest.raises(SystemExit, match="2"),
+        ):
+            notify_telegram.main(["watch", "--poll"])
 
         watch_loop.assert_not_called()
         captured = capsys.readouterr()
@@ -1674,9 +1682,11 @@ class TestCli:
         import pytest
 
         ledger = tmp_path / "logs" / "waves.jsonl"
-        with patch("notify_telegram.watch_loop") as watch_loop:
-            with pytest.raises(SystemExit, match="2"):
-                notify_telegram.main(["watch", str(ledger), "--state-dir"])
+        with (
+            patch("notify_telegram.watch_loop") as watch_loop,
+            pytest.raises(SystemExit, match="2"),
+        ):
+            notify_telegram.main(["watch", str(ledger), "--state-dir"])
 
         watch_loop.assert_not_called()
         captured = capsys.readouterr()
@@ -1688,9 +1698,11 @@ class TestCli:
         import pytest
 
         ledger = tmp_path / "logs" / "waves.jsonl"
-        with patch("notify_telegram.watch_loop") as watch_loop:
-            with pytest.raises(SystemExit, match="2"):
-                notify_telegram.main(["watch", str(ledger), "--poll"])
+        with (
+            patch("notify_telegram.watch_loop") as watch_loop,
+            pytest.raises(SystemExit, match="2"),
+        ):
+            notify_telegram.main(["watch", str(ledger), "--poll"])
 
         watch_loop.assert_not_called()
         captured = capsys.readouterr()
@@ -1720,11 +1732,11 @@ class TestCli:
         ledger = tmp_path / "logs" / "waves.jsonl"
         state_dir = tmp_path / "state"
 
-        with patch("notify_telegram.watch_loop", side_effect=KeyboardInterrupt):
-            with pytest.raises(SystemExit) as exc_info:
-                notify_telegram.main(
-                    ["watch", str(ledger), "--state-dir", str(state_dir)]
-                )
+        with (
+            patch("notify_telegram.watch_loop", side_effect=KeyboardInterrupt),
+            pytest.raises(SystemExit) as exc_info,
+        ):
+            notify_telegram.main(["watch", str(ledger), "--state-dir", str(state_dir)])
 
         captured = capsys.readouterr()
         assert exc_info.value.code == 130
@@ -1853,9 +1865,11 @@ class TestCli:
     def test_test_unknown_flag_exits(self, capsys) -> None:
         import pytest
 
-        with patch("notify_telegram.send_message") as send_mock:
-            with pytest.raises(SystemExit, match="2"):
-                notify_telegram.main(["test", "--json"])
+        with (
+            patch("notify_telegram.send_message") as send_mock,
+            pytest.raises(SystemExit, match="2"),
+        ):
+            notify_telegram.main(["test", "--json"])
 
         send_mock.assert_not_called()
         captured = capsys.readouterr()
@@ -2749,16 +2763,18 @@ class TestWatchHealth:
 
         ledger = tmp_path / "logs" / "waves.jsonl"
 
-        with patch.dict(os.environ, {"MAINSPRING_NOTIFY_ENABLED": "1"}, clear=True):
-            with pytest.raises(SystemExit, match="1"):
-                notify_telegram.main(
-                    [
-                        "operator-health",
-                        str(ledger),
-                        "--state-dir",
-                        str(tmp_path / "state"),
-                    ]
-                )
+        with (
+            patch.dict(os.environ, {"MAINSPRING_NOTIFY_ENABLED": "1"}, clear=True),
+            pytest.raises(SystemExit, match="1"),
+        ):
+            notify_telegram.main(
+                [
+                    "operator-health",
+                    str(ledger),
+                    "--state-dir",
+                    str(tmp_path / "state"),
+                ]
+            )
 
         captured = capsys.readouterr()
         assert "status=unconfigured" in captured.out
@@ -2784,28 +2800,30 @@ class TestWatchHealth:
         state.last_activity_ts = 1.0
         state.save()
 
-        with patch.dict(
-            os.environ,
-            {
-                "MAINSPRING_NOTIFY_ENABLED": "1",
-                "MAINSPRING_TELEGRAM_BOT_TOKEN": "token",
-                "MAINSPRING_TELEGRAM_CHAT_ID": "123",
-            },
-            clear=True,
+        with (
+            patch.dict(
+                os.environ,
+                {
+                    "MAINSPRING_NOTIFY_ENABLED": "1",
+                    "MAINSPRING_TELEGRAM_BOT_TOKEN": "token",
+                    "MAINSPRING_TELEGRAM_CHAT_ID": "123",
+                },
+                clear=True,
+            ),
+            pytest.raises(SystemExit, match="2"),
         ):
-            with pytest.raises(SystemExit, match="2"):
-                notify_telegram.main(
-                    [
-                        "operator-health",
-                        str(ledger),
-                        "--state-dir",
-                        str(state_dir),
-                        "--stale-seconds",
-                        "1",
-                        "--format",
-                        "json",
-                    ]
-                )
+            notify_telegram.main(
+                [
+                    "operator-health",
+                    str(ledger),
+                    "--state-dir",
+                    str(state_dir),
+                    "--stale-seconds",
+                    "1",
+                    "--format",
+                    "json",
+                ]
+            )
 
         captured = capsys.readouterr()
         payload = json.loads(captured.out)
