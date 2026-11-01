@@ -233,14 +233,29 @@ def test_cli_failed_result_uses_stderr_and_exit_one(
     seed_active(project, True)
     if phase == "existing":
         seed_prd(project)
-    controlled_failure(project, monkeypatch, phase)
+    calls = controlled_failure(project, monkeypatch, phase)
 
     status = canonical.method_init._cli_main(["demo", "--root", str(project.root)])
     captured = capsys.readouterr()
 
     assert status == 1
     assert captured.out == ""
-    assert captured.err.startswith("Mainspring init failed: ")
+    assert (
+        calls
+        == {
+            "existing": [],
+            "template": [],
+            "binary": ["find"],
+            "backend": ["find", "backend"],
+        }[phase]
+    )
+    expected_error = {
+        "existing": "PRD already exists:",
+        "template": "Method PRD template not found.",
+        "binary": ".taskmaster/ is absent and neither task-master nor taskmaster",
+        "backend": BACKEND_FAILURE,
+    }[phase]
+    assert captured.err.startswith(f"Mainspring init failed: {expected_error}")
     assert captured.err.endswith("\n")
     assert_active_preserved(project, True)
     if phase == "existing":

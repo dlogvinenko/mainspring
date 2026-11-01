@@ -215,24 +215,27 @@ def test_actual_supervisor_preserves_valid_and_existing_terminal_controls(
 
 @pytest.mark.parametrize("status", [True, ["ok"]])
 def test_actual_active_team_scan_does_not_select_non_scalar_status(tmp_path, status):
-    code, _result, calls = shell(
+    code, result, calls = shell(
         tmp_path,
         {"status": status, "phase": "running", "workers": {"total": 2, "dead": 0}},
         "active",
     )
     assert code == 1 and not calls
+    assert result.stdout.split("NATIVE_RETURN:", 1)[0].splitlines() == []
 
 
 @pytest.mark.parametrize(
     "phase,expected", [("running", 0), ("complete", 1), ("cancelled", 1), ("failed", 1)]
 )
 def test_actual_active_team_scan_preserves_named_phases(tmp_path, phase, expected):
-    code, _result, calls = shell(
+    code, result, calls = shell(
         tmp_path,
         {"status": "ok", "phase": phase, "workers": {"total": 2, "dead": 0}},
         "active",
     )
     assert code == expected and not calls
+    expected_names = ["synthetic-team"] if phase == "running" else []
+    assert result.stdout.split("NATIVE_RETURN:", 1)[0].splitlines() == expected_names
 
 
 @pytest.mark.parametrize(
