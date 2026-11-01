@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
 """Convert ``fnm env --json`` output into safe shell assignment lines."""
 

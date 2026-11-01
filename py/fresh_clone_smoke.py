@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
 """Run the release smoke gate from a clean fresh clone of HEAD."""
 

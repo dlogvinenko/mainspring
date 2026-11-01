@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
 """Tiny LiteLLM completion runner for Mainspring engine dispatch.
 

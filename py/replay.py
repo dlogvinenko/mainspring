@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
 """Mainspring wave replay — deterministic re-execution of recorded waves.
 

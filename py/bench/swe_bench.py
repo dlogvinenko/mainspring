@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
 """Fail-closed SWE-bench Verified runner wrapper for Mainspring releases."""
 

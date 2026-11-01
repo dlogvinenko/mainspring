@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
 """Build or apply Taskmaster tasks from a Method-shaped PRD phase.
 
