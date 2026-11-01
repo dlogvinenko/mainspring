@@ -11,7 +11,6 @@ from pathlib import Path
 
 import pytest
 
-
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "py" / "fresh_clone_smoke.py"
 MAKEFILE = ROOT / "Makefile"

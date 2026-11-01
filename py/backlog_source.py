@@ -11,7 +11,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Protocol, Sequence
 
-
 ACTIONABLE_STATUSES = {"pending", "in-progress", "review"}
 
 

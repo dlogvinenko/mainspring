@@ -15,7 +15,6 @@ sys.path.insert(0, str(HERE.parent))
 
 import homebrew_formula
 
-
 VALID_SHA = "0123456789abcdef" * 4
 VALID_URL = "https://github.com/dlogvinenko/mainspring/archive/refs/tags/v1.0.0.tar.gz"
 VALID_HOMEPAGE = "https://github.com/dlogvinenko/mainspring"

@@ -5,7 +5,6 @@ from __future__ import annotations
 
 from engines.litellm_adapter import LiteLLMProviderAdapter
 
-
 ADAPTER = LiteLLMProviderAdapter(
     name="openrouter",
     display_name="OpenRouter",

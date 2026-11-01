@@ -14,7 +14,6 @@ import sys
 from pathlib import Path
 from typing import Any
 
-
 DEFAULT_DATASET = "princeton-nlp/SWE-bench_Verified"
 DEFAULT_SPLIT = "test"
 DEFAULT_RUN_ID = "mainspring-swe-bench-verified"

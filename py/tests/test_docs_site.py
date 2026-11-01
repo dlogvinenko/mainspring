@@ -15,7 +15,6 @@ sys.path.insert(0, str(HERE.parent))
 
 import docs_site
 
-
 REPO_ROOT = HERE.parents[1]
 SCRIPT = HERE.parent / "docs_site.py"
 PAGES_WORKFLOW = REPO_ROOT / ".github" / "workflows" / "pages.yml"
