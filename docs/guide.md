@@ -177,7 +177,9 @@ edited-task behavior retain their existing rules.
 Taskmaster dependency collections must be JSON arrays when present and non-null.
 Malformed task or subtask collections do not establish readiness. Missing/null
 fields and empty arrays keep their no-prerequisite behavior; existing `done`
-checks and identifier matching are unchanged.
+checks and identifier matching are unchanged. Empty rollup/fallback/skip results
+remain a single newline; task-path display retains the first complete
+`.taskmaster/tasks/tasks.json` marker.
 
 When no backlog exists, Mainspring does not guess: missing backlog prints
 `mainspring init checkout-redesign` guidance so the operator can start from a

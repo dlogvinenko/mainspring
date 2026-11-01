@@ -83,9 +83,9 @@ they were not revalidated as current results in this draft.
 | Source shell syntax                     | passes                                             | `bash -n mainspring.sh lib/*.sh`                         |
 | Source shell lint                       | passes                                             | `shellcheck -S warning mainspring.sh lib/*.sh`           |
 | Python lint                             | 410 baseline findings, zero additions                | Ruff 0.17.3 comparison with public `4d365cc` on 2026-10-30 |
-| Python format                           | passes, 109 files already formatted                 | `ruff format --check py`                                 |
+| Python format                           | passes, 110 files already formatted                 | `ruff format --check py`                                 |
 | Active embedded Python in shell paths   | 0 heredoc / inline-parser hits                     | `rg` scan for `python3 - <<` and `python3 -c` in shell    |
-| Pytest suite files                      | 59                                                 | `find py/tests -name 'test_*.py'` plus count             |
+| Pytest suite files                      | 60                                                 | `find py/tests -name 'test_*.py'` plus count             |
 | Bats suite files                        | 14                                                 | `find tests/bats -name '*.bats'` plus count              |
 | Python line coverage                    | 90.6% (coverage gate pass)                         | `make coverage` on 2026-06-16                           |
 | Full local gate                         | blocked: 1149 Python tests passed, 1 skipped; 223 Bats passed (doctor fixtures isolate inherited interpreter overrides); HUD/docs-site and package smoke pass; 410 baseline Ruff findings; known filelock findings resolved in the validated public dependency graphs | separate local gates on 2026-10-30; `make all` stops at baseline lint |
@@ -1266,7 +1266,7 @@ truth. It is intentionally a map, not a second implementation plan.
 - `py/prd_brief.py` honors explicit nonnegative Python-character budgets below 32 with the fitting prefix of its existing truncation marker when needed. Already-fitting summaries, normal/default output and the CLI's 6000 default stay unchanged; no new minimum, negative-budget, type or path policy is added.
 - `docs/guide.md` is the human-facing command reference. Its command tables group command families with complete runnable variants, not detached flags.
 - `py/docs_site.py` protects canonical input paths before writes or cleanup; incremental writes also reject source file aliases. Marked rebuilds can unlink output symlinks safely, and unmarked incremental builds keep unrelated custom assets.
-- Taskmaster dependency collections must be arrays when present and non-null. Malformed collections do not establish readiness; missing/null fields and empty arrays remain no prerequisites. Existing `done` checks and identifier matching stay unchanged in `py/backlog_source.py` and `py/taskmaster.py`.
+- Taskmaster dependency collections must be arrays when present and non-null. Malformed collections do not establish readiness; missing/null fields and empty arrays remain no prerequisites. Existing `done` checks and identifier matching stay unchanged in `py/backlog_source.py` and `py/taskmaster.py`. Empty rollup/fallback/skip helpers retain one newline; task-path display retains the first complete `.taskmaster/tasks/tasks.json` marker.
 - `py/decompose.py` matches structured generated records by exact source, digest and `taskId`; legacy records require whole `GeneratedBy`, `Source` and `Digest` lines. Invalid container shapes and ambiguous text-only legacy identity fail before backups or task-file writes. Digest, prompt, atomic-write and manual-blocker behavior remain unchanged.
 
 ### Runtime and logs

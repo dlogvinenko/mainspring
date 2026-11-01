@@ -108,7 +108,7 @@ def _display_tasks_path(tasks_file: str) -> str:
     path = Path(tasks_file)
     parts = path.parts
     needle = (".taskmaster", "tasks", "tasks.json")
-    for index in range(0, max(len(parts) - len(needle) + 1, 0)):
+    for index in range(max(len(parts) - len(needle) + 1, 0)):
         if parts[index : index + len(needle)] == needle:
             return DEFAULT_TASKMASTER_DISPLAY_PATH
     if path.is_absolute():
@@ -558,20 +558,20 @@ def cmd_parent_rollup(tasks_file: str, target_id: str) -> None:
             continue
         subtasks = task.get("subtasks", []) or []
         if not subtasks:
-            print("")
+            print()
             return
         statuses = {str(sub.get("status") or "") for sub in subtasks}
         active = {"pending", "in-progress", "review"}
         if statuses & active:
-            print("")
+            print()
         elif "blocked" in statuses:
             print("blocked")
         elif statuses <= {"done", "deferred"}:
             print("done")
         else:
-            print("")
+            print()
         return
-    print("")
+    print()
 
 
 # ── next ───────────────────────────────────────────────────────────────
@@ -665,7 +665,7 @@ def cmd_fallback_next(tasks_file: str) -> None:
         candidates.sort()
         print(candidates[0][2])
     else:
-        print("")
+        print()
 
 
 # ── collect-parallel ───────────────────────────────────────────────────
@@ -793,7 +793,7 @@ def cmd_team_skip_reason(tasks_file: str) -> None:
                 print(_team_skip_reason_for_prefix(excluded_prefix))
                 return
 
-    print("")
+    print()
 
 
 # ── scope-check ────────────────────────────────────────────────────────
