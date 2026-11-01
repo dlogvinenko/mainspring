@@ -157,6 +157,7 @@ def test_roundtrip(tmp_path: Path) -> None:
         capture_output=True,
         text=True,
         env=env,
+        check=False,
     )
     lr = tmp_path / "last-run.env"
     lr.write_text(save_result.stdout)
@@ -165,6 +166,7 @@ def test_roundtrip(tmp_path: Path) -> None:
         [sys.executable, SCRIPT, "load", str(lr)],
         capture_output=True,
         text=True,
+        check=False,
     )
     lines = load_result.stdout.strip().splitlines()
     parsed = dict(line.split("\t", 1) for line in lines)

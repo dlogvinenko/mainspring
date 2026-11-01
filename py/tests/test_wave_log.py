@@ -477,6 +477,7 @@ def test_last_summary_empty(tmp_path: Path, capsys: object) -> None:
         [sys.executable, str(HERE.parent / "wave_log.py"), "last-summary", str(ledger)],
         capture_output=True,
         text=True,
+        check=True,
     )
     assert "last-wave: none" in result.stdout
 
@@ -495,6 +496,7 @@ def test_last_summary_missing_file(tmp_path: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        check=True,
     )
     assert "last-wave: none" in result.stdout
 
@@ -525,6 +527,7 @@ def test_last_summary_shows_last_entry(tmp_path: Path) -> None:
         [sys.executable, str(HERE.parent / "wave_log.py"), "last-summary", str(ledger)],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert "id=w2" in result.stdout
     assert "mode=night" in result.stdout
@@ -550,6 +553,7 @@ def test_routing_hints_empty(tmp_path: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        check=True,
     )
     assert "no wave metrics yet" in result.stdout
 
@@ -571,6 +575,7 @@ def test_routing_hints_repeated_failures(tmp_path: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert "stop/review recommended" in result.stdout
 
@@ -596,6 +601,7 @@ def test_routing_hints_review_failures(tmp_path: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        check=True,
     )
     assert "retry same item in solo mode" in result.stdout
 
@@ -625,6 +631,7 @@ def test_routing_hints_team_no_parallel(tmp_path: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        check=True,
     )
     assert "use solo mode" in result.stdout
 
@@ -646,6 +653,7 @@ def test_routing_hints_no_failures(tmp_path: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        check=True,
     )
     assert "no failure trend detected" in result.stdout
 
