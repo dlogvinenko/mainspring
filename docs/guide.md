@@ -694,6 +694,20 @@ mainspring notify-test
 after validating that the process belongs to this runtime's ledger. Avoid broad
 process-name kills; they can kill another project's notifier.
 
+## Development Verification
+
+`make coverage` is the dependency-free helper-line gate with the existing 80%
+threshold. Supported first-party Python CLI interception restores the caller's
+working directory and normalizes UTF-8 text newlines; byte output stays exact.
+Non-None deadlines, explicit decoding/error options and conflicting text flags
+use genuine subprocess execution. Those child lines can remain unobserved while
+eligible source still stays in the denominator.
+
+This is a bounded tracing measure, not a full subprocess emulator or proof of
+live account/provider integration. Keep native behavior and observability
+separate when interpreting the result; passing the threshold does not erase
+unobserved source or establish native-locale/Windows parity.
+
 ## Docs Site Maintenance
 
 The docs-site generator checks canonical document inputs before output writes

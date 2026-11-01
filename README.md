@@ -266,5 +266,5 @@ Full surface: `mainspring help --full` and [`docs/guide.md`](docs/guide.md).
 | [`docs/competitive-analysis.md`](docs/competitive-analysis.md) | Market map, 1000-point release score, fit matrix, and positioning strategy. |
 | [`docs/metrics.md`](docs/metrics.md) | Wave ledger JSONL fields and metrics semantics. |
 | [`docs/architecture.md`](docs/architecture.md) | Runtime boundaries, modules, and extension points. |
-| [`CONTRIBUTING.md`](CONTRIBUTING.md) | How to add engines and contribute safely. |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | How to add engines and contribute safely. Coverage preserves supported helper cwd/text behavior; deadlines and custom decoding use real subprocesses. |
 | [`SECURITY.md`](SECURITY.md) | How to report vulnerabilities without leaking secrets. |

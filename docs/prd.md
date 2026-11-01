@@ -83,9 +83,9 @@ they were not revalidated as current results in this draft.
 | Source shell syntax                     | passes                                             | `bash -n mainspring.sh lib/*.sh`                         |
 | Source shell lint                       | passes                                             | `shellcheck -S warning mainspring.sh lib/*.sh`           |
 | Python lint                             | 410 baseline findings, zero additions                | Ruff 0.17.3 comparison with public `4d365cc` on 2026-10-30 |
-| Python format                           | passes, 113 files already formatted                 | `ruff format --check py`                                 |
+| Python format                           | passes, 114 files already formatted                 | `ruff format --check py`                                 |
 | Active embedded Python in shell paths   | 0 heredoc / inline-parser hits                     | `rg` scan for `python3 - <<` and `python3 -c` in shell    |
-| Pytest suite files                      | 62                                                 | `find py/tests -name 'test_*.py'` plus count             |
+| Pytest suite files                      | 63                                                 | `find py/tests -name 'test_*.py'` plus count             |
 | Bats suite files                        | 14                                                 | `find tests/bats -name '*.bats'` plus count              |
 | Python line coverage                    | 90.6% (coverage gate pass)                         | `make coverage` on 2026-06-16                           |
 | Full local gate                         | blocked: 1149 Python tests passed, 1 skipped; 223 Bats passed (doctor fixtures isolate inherited interpreter overrides); HUD/docs-site and package smoke pass; 410 baseline Ruff findings; known filelock findings resolved in the validated public dependency graphs | separate local gates on 2026-10-30; `make all` stops at baseline lint |
@@ -1306,9 +1306,9 @@ truth. It is intentionally a map, not a second implementation plan.
 - Python lint and format: `ruff check py` and `ruff format --check py`.
 - Unit/integration behavior: `python3 -m pytest py/tests -q` and
   `bash tests/bats/run.sh`.
-- Public docs and payload checks: `make release-check` (which expands to
-  `make all`, `make package-smoke`, coverage, PRD validation, and
-  `git diff --check`).
+- Coverage: `make coverage` keeps its 80% threshold and source inclusion, restores supported helper cwd and UTF-8 text newlines; deadlines/custom codecs/conflicting text flags delegate, with unobserved helper lines still counted in source.
+- Public docs and payload checks: `make release-check` expands to `make all`,
+  `make package-smoke`, coverage, PRD validation, and `git diff --check`.
 
 ---
 
