@@ -30,6 +30,7 @@ PAYLOAD="$3"
 CASE_DIR="$4"
 PARSER_INTERPRETER="$5"
 PRODUCT_COUNT="$6"
+WRITER_FILE="${7:-$PAYLOAD}"
 ROOT_DIR="$CASE_DIR/project"
 LOG_DIR="$CASE_DIR/logs"
 SUMMARY_FILE="$CASE_DIR/summary.txt"
@@ -48,7 +49,7 @@ run_ai_turn() { cp "$PAYLOAD" "$4"; : > "$3"; return 0; }
 append_review_ledgers() { :; }
 write_review_repair_instructions() { printf '%s\n' 'SYNTHETIC_REPAIR_REQUESTED'; }
 rc=0
-if apply_review_gate synthetic synthetic-target src/synthetic.py "$PAYLOAD" 1; then
+if apply_review_gate synthetic synthetic-target src/synthetic.py "$WRITER_FILE" 1; then
   rc=0
 else
   rc=$?
@@ -78,7 +79,7 @@ def _cli(file, command, *extra):
     )
 
 
-def _gate(tmp_path, file, *, silent_status=None, product_count=1):
+def _gate(tmp_path, file, *, silent_status=None, product_count=1, writer_file=None):
     work = tmp_path / "gate"
     work.mkdir()
     script = tmp_path / "consumer.sh"
@@ -107,6 +108,7 @@ def _gate(tmp_path, file, *, silent_status=None, product_count=1):
             str(work),
             interpreter,
             str(product_count),
+            *([str(writer_file)] if writer_file is not None else []),
         ],
         cwd=tmp_path,
         env=ENV,
@@ -190,3 +192,39 @@ def test_product_change_guard_stays_independent(tmp_path):
     result = _gate(tmp_path, file, product_count=0)
     assert result.returncode != 0
     assert "no product/source file changes" in result.stdout
+
+
+@pytest.mark.parametrize("reviewer_pass", [False, True])
+def test_gate_validates_reviewer_instead_of_writer(tmp_path, reviewer_pass):
+    reviewer = _extract_json_block(FULL_JSON_REVIEW)
+    if not reviewer_pass:
+        reviewer["verdict"] = "FAIL"
+    file = _review_file(tmp_path, reviewer)
+    writer = tmp_path / "writer.txt"
+    writer.write_text("writer output\n" if reviewer_pass else FULL_JSON_REVIEW)
+
+    assert (_cli(file, "validate").returncode == 0) is reviewer_pass
+    result = _gate(tmp_path, file, writer_file=writer)
+
+    assert (result.returncode == 0) is reviewer_pass, result.stdout + result.stderr
+
+
+@pytest.mark.parametrize(
+    "field", ["verification_evidence", "tests_to_run", "required_changes", "strengths"]
+)
+@pytest.mark.parametrize("value", [True, ["vitest run passes"], {"cmd": "npm test"}])
+def test_truthy_nontext_evidence_is_not_coerced_into_text(tmp_path, field, value):
+    payload = _extract_json_block(FULL_JSON_REVIEW)
+    payload[field] = value
+    file = _review_file(tmp_path, payload)
+
+    cli = _cli(file, "validate")
+    gate = _gate(tmp_path, file)
+
+    assert cli.returncode != 0 and gate.returncode != 0, {
+        "cli_stdout": cli.stdout,
+        "cli_stderr": cli.stderr,
+        "gate_stdout": gate.stdout,
+        "gate_stderr": gate.stderr,
+    }
+    assert _cli(file, "field", field).stdout == ""
