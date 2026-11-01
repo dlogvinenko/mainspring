@@ -32,7 +32,7 @@ def normalize_version(version: str) -> str:
         raise FormulaInputError(
             "version must look like a SemVer release, for example v1.0.0"
         )
-    return cleaned[1:] if cleaned.startswith("v") else cleaned
+    return cleaned.removeprefix("v")
 
 
 def validate_url(url: str) -> str:

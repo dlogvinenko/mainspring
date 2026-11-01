@@ -53,7 +53,7 @@ def _as_bool(value: str | None, *, default: bool = False) -> bool:
 def _is_product_file_change(path: str) -> bool:
     normalized = path.strip()
     if normalized.startswith("./"):
-        normalized = normalized[2:]
+        normalized = normalized.removeprefix("./")
     if not normalized:
         return False
     if normalized in {"README.md", "CLAUDE.md", "AGENTS.md"}:
