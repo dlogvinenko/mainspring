@@ -92,6 +92,7 @@ def test_load_valid_file(tmp_path: Path) -> None:
         [sys.executable, SCRIPT, "load", str(lr)],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 0
     lines = result.stdout.strip().splitlines()
@@ -110,6 +111,7 @@ def test_load_unquoted_values(tmp_path: Path) -> None:
         [sys.executable, SCRIPT, "load", str(lr)],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 0
     lines = result.stdout.strip().splitlines()
@@ -127,6 +129,7 @@ def test_load_rejects_multiword_values(tmp_path: Path) -> None:
         [sys.executable, SCRIPT, "load", str(lr)],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 0
     lines = result.stdout.strip().splitlines()
@@ -197,6 +200,7 @@ def test_load_valid_yaml_config(tmp_path: Path) -> None:
         [sys.executable, SCRIPT, "load", str(config)],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 0
     parsed = dict(line.split("\t", 1) for line in result.stdout.strip().splitlines())
@@ -220,6 +224,7 @@ def test_load_yaml_schema_violation_fails_closed(tmp_path: Path) -> None:
         [sys.executable, SCRIPT, "load", str(config)],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 2
     assert result.stdout == ""
@@ -238,6 +243,7 @@ def test_load_yaml_unknown_property_fails_closed(tmp_path: Path) -> None:
         [sys.executable, SCRIPT, "load", str(config)],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 2
     assert "unknown property: unknown-setting" in result.stderr
@@ -252,6 +258,7 @@ def test_load_yaml_malformed_syntax_fails_closed(tmp_path: Path) -> None:
         [sys.executable, SCRIPT, "load", str(config)],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 2
     assert "line 1: missing ':'" in result.stderr
@@ -368,6 +375,7 @@ def test_show_outputs_project_summary_and_repeat_commands(tmp_path: Path) -> Non
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -390,6 +398,7 @@ def test_show_help_exits_zero_without_settings_file(tmp_path: Path) -> None:
         [sys.executable, SCRIPT, "show", str(missing_path), "--help"],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -410,6 +419,7 @@ def test_show_json_outputs_machine_readable_summary(tmp_path: Path) -> None:
         [sys.executable, SCRIPT, "show", str(path), "--project", "/tmp/demo", "--json"],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -431,6 +441,7 @@ def test_cli_no_args() -> None:
         [sys.executable, SCRIPT],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 2
 
@@ -442,6 +453,7 @@ def test_cli_load_no_path() -> None:
         [sys.executable, SCRIPT, "load"],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 2
 
@@ -451,6 +463,7 @@ def test_cli_unknown_subcommand() -> None:
         [sys.executable, SCRIPT, "bogus"],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 2

@@ -298,10 +298,12 @@ def test_trace_python_subprocesses_preserves_subprocess_result_shape(
             text=True,
             cwd=tmp_path,
             env={"TRACE_GATE_TEST": "configured"},
+            check=False,
         )
         binary_result = subprocess.run(
             [sys.executable, str(binary_script)],
             capture_output=True,
+            check=False,
         )
 
     assert text_result.returncode == 0
@@ -317,12 +319,13 @@ def test_trace_python_subprocesses_fallbacks_and_check_error(tmp_path: Path) -> 
     script.write_text("raise SystemExit(7)\n", encoding="utf-8")
 
     with coverage_gate._trace_python_subprocesses(tmp_path):
-        no_capture = subprocess.run([sys.executable, str(script)])
+        no_capture = subprocess.run([sys.executable, str(script)], check=False)
         with_input = subprocess.run(
             [sys.executable, str(script)],
             input="ignored",
             capture_output=True,
             text=True,
+            check=False,
         )
         with pytest.raises(subprocess.CalledProcessError) as exc:
             subprocess.run(
@@ -437,6 +440,7 @@ def test_cli_json_mode_is_clean(tmp_path: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -466,6 +470,7 @@ def test_cli_text_mode_fails_below_threshold(tmp_path: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 1

@@ -1689,6 +1689,7 @@ def test_cli_json_outputs_snapshot(tmp_path: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -1723,6 +1724,7 @@ def test_cli_global_json_outputs_machine_snapshot(tmp_path: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -1886,6 +1888,7 @@ def test_cli_width_limits_text_output(tmp_path: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -1917,6 +1920,7 @@ def test_cli_watch_renders_bounded_refresh_frames(tmp_path: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -1948,6 +1952,7 @@ def test_cli_watch_defaults_to_plain_frames_when_captured(tmp_path: Path) -> Non
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -1978,6 +1983,7 @@ def test_cli_watch_no_ansi_overrides_terminal_redraw(tmp_path: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -2033,6 +2039,7 @@ def test_cli_no_args_stays_one_shot_when_output_is_captured(tmp_path: Path) -> N
         capture_output=True,
         text=True,
         timeout=5,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -2051,6 +2058,7 @@ def test_top_level_hud_auto_live_stays_one_shot_when_output_is_captured(
         capture_output=True,
         text=True,
         timeout=5,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -2083,6 +2091,7 @@ def test_cli_rich_renders_bounded_live_snapshot(tmp_path: Path, width: int) -> N
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -2116,6 +2125,7 @@ def test_cli_rich_once_renders_single_bounded_live_snapshot(tmp_path: Path) -> N
         capture_output=True,
         text=True,
         timeout=5,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -2153,6 +2163,7 @@ def test_cli_rich_watch_renders_live_hud(tmp_path: Path) -> None:
         capture_output=True,
         text=True,
         timeout=5,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -2210,6 +2221,7 @@ def test_cli_watch_rejects_json_output(tmp_path: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 2
@@ -2235,6 +2247,7 @@ def test_cli_iterations_requires_watch(tmp_path: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 2
@@ -2261,6 +2274,7 @@ def test_cli_rejects_invalid_since_filter(tmp_path: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 2
@@ -2287,6 +2301,7 @@ def test_cli_rejects_negative_since_duration(tmp_path: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 2
@@ -2307,6 +2322,7 @@ def test_cli_rejects_missing_option_values() -> None:
             [sys.executable, SCRIPT, flag],
             capture_output=True,
             text=True,
+            check=False,
         )
 
         assert result.returncode == 2
@@ -2318,6 +2334,7 @@ def test_cli_help_exits_zero() -> None:
         [sys.executable, SCRIPT, "--help"],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 0
