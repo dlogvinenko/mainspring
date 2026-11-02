@@ -6,9 +6,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-
 from cli_runtime import run_cli
-
 
 PY_DIR = Path(__file__).resolve().parents[1]
 

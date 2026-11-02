@@ -1,15 +1,13 @@
-#!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
 """File-descriptor lock helper for the Mainspring shell runtime."""
 
 from __future__ import annotations
 
-from cli_runtime import run_cli
-
 import errno
 import sys
-from typing import Sequence
+from collections.abc import Sequence
 
+from cli_runtime import run_cli
 
 BUSY_ERRNOS = {errno.EACCES, errno.EAGAIN}
 USAGE = "Usage: fd_lock.py check|lock|unlock [fd]"

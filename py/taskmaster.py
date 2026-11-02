@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
 """Taskmaster JSON operations for Mainspring.
 
@@ -31,14 +30,14 @@ Usage:
 
 from __future__ import annotations
 
-from cli_runtime import run_cli
-
 import json
 import os
 import re
 import sys
 from collections import Counter
 from pathlib import Path
+
+from cli_runtime import run_cli
 
 DEFAULT_TEAM_EXCLUDE_PREFIXES = ".claude"
 DEFAULT_TASKMASTER_DISPLAY_PATH = ".taskmaster/tasks/tasks.json"
@@ -88,7 +87,14 @@ def _active_tag(tasks_file: str) -> str:
             tag = str(state.get("currentTag") or "").strip()
             if tag:
                 return tag
-        except Exception:
+        except (
+            OSError,
+            UnicodeError,
+            ValueError,
+            TypeError,
+            AttributeError,
+            RecursionError,
+        ):
             pass
 
     return "master"
@@ -98,14 +104,17 @@ def _load_tasks(tasks_file: str) -> list[dict]:
     path = Path(tasks_file)
     obj = json.loads(path.read_text(encoding="utf-8"))
     tag = _active_tag(tasks_file)
-    return obj.get(tag, {}).get("tasks", [])
+    tasks = obj.get(tag, {}).get("tasks", [])
+    if not isinstance(tasks, list):
+        raise TypeError("Selected Taskmaster tag tasks must be an array")
+    return tasks
 
 
 def _display_tasks_path(tasks_file: str) -> str:
     path = Path(tasks_file)
     parts = path.parts
     needle = (".taskmaster", "tasks", "tasks.json")
-    for index in range(0, max(len(parts) - len(needle) + 1, 0)):
+    for index in range(max(len(parts) - len(needle) + 1, 0)):
         if parts[index : index + len(needle)] == needle:
             return DEFAULT_TASKMASTER_DISPLAY_PATH
     if path.is_absolute():
@@ -141,13 +150,26 @@ def _dep_done(dep_id: str, by_id: dict[str, dict]) -> bool:
     return bool(task and task.get("status") == "done")
 
 
+def _task_deps_done(task: dict, by_id: dict[str, dict]) -> bool:
+    dependencies = task.get("dependencies")
+    return dependencies is None or (
+        isinstance(dependencies, list)
+        and all(_dep_done(dep, by_id) for dep in dependencies)
+    )
+
+
 def _sub_deps_done(task: dict, sub: dict) -> bool:
+    dependencies = sub.get("dependencies", [])
+    if dependencies is None:
+        dependencies = []
+    if not isinstance(dependencies, list):
+        return False
     done = {
         str(s.get("id"))
         for s in task.get("subtasks", []) or []
         if s.get("status") == "done"
     }
-    return all(str(dep) in done for dep in sub.get("dependencies", []) or [])
+    return all(str(dep) in done for dep in dependencies)
 
 
 def _find_task_item(tasks_file: str, target_id: str) -> dict | None:
@@ -309,7 +331,14 @@ def cmd_status_summary(tasks_file: str) -> None:
     """Print task status counts, scheduler decision, and integrity checks."""
     try:
         tasks = _load_tasks(tasks_file)
-    except Exception as exc:
+    except (
+        OSError,
+        UnicodeError,
+        ValueError,
+        TypeError,
+        AttributeError,
+        RecursionError,
+    ) as exc:
         print(f"Taskmaster: unreadable ({exc})")
         return
 
@@ -344,7 +373,7 @@ def cmd_status_summary(tasks_file: str) -> None:
         status = str(task.get("status") or "")
         if status not in {"pending", "in-progress", "review"}:
             continue
-        if not all(_dep_done(dep, by_id) for dep in task.get("dependencies", []) or []):
+        if not _task_deps_done(task, by_id):
             continue
         candidates.append((_rank(status), int(task.get("id") or 0), task))
 
@@ -353,7 +382,7 @@ def cmd_status_summary(tasks_file: str) -> None:
         _print_integrity(integrity_warnings)
         return
 
-    _, _, task = sorted(candidates)[0]
+    _, _, task = sorted(candidates)[0]  # noqa: FURB192 - retain validation of the complete candidate ordering
     task_id = str(task.get("id"))
     title = str(task.get("title") or "").strip()
     subs = task.get("subtasks", []) or []
@@ -388,7 +417,7 @@ def cmd_status_summary(tasks_file: str) -> None:
         )
         print(f"scheduler: {lane} #{task_id} {title}")
     elif ready_subs:
-        _, sid, sub_status = sorted(ready_subs)[0]
+        _, sid, sub_status = min(ready_subs)
         lane = "SELECT_REVIEW" if sub_status == "review" else "SELECT_IMPLEMENTATION"
         print(f"scheduler: {lane} #{sid} from parent #{task_id} {title}")
     elif review_subs:
@@ -422,7 +451,14 @@ def cmd_scope_summary(tasks_file: str, plugins_ignored: bool = False) -> None:
     """Print scope safety analysis for the next work item."""
     try:
         tasks = _load_tasks(tasks_file)
-    except Exception as exc:
+    except (
+        OSError,
+        UnicodeError,
+        ValueError,
+        TypeError,
+        AttributeError,
+        RecursionError,
+    ) as exc:
         print(_format_tasks_load_error("scope", tasks_file, exc))
         return
 
@@ -444,14 +480,14 @@ def cmd_scope_summary(tasks_file: str, plugins_ignored: bool = False) -> None:
         status = str(task.get("status") or "")
         if status not in {"pending", "in-progress", "review"}:
             continue
-        if all(_dep_done(dep, by_id) for dep in task.get("dependencies", []) or []):
+        if _task_deps_done(task, by_id):
             parents.append((_rank(status), int(task.get("id") or 0), task))
 
     if not parents:
         print("scope: no ready top-level Taskmaster item")
         return
 
-    _, _, task = sorted(parents)[0]
+    _, _, task = sorted(parents)[0]  # noqa: FURB192 - retain validation of the complete candidate ordering
     task_id = str(task.get("id"))
     selected_id = task_id
     selected_sub: dict | None = None
@@ -461,7 +497,7 @@ def cmd_scope_summary(tasks_file: str, plugins_ignored: bool = False) -> None:
         if status in {"pending", "in-progress", "review"} and _sub_deps_done(task, sub):
             ready_subs.append((_rank(status), int(sub.get("id") or 0), sub))
     if ready_subs:
-        _, _, selected_sub = sorted(ready_subs)[0]
+        _, _, selected_sub = sorted(ready_subs)[0]  # noqa: FURB192 - retain validation of the complete candidate ordering
         selected_id = f"{task_id}.{selected_sub.get('id')}"
 
     text = text_for(task, selected_sub)
@@ -542,20 +578,20 @@ def cmd_parent_rollup(tasks_file: str, target_id: str) -> None:
             continue
         subtasks = task.get("subtasks", []) or []
         if not subtasks:
-            print("")
+            print()
             return
         statuses = {str(sub.get("status") or "") for sub in subtasks}
         active = {"pending", "in-progress", "review"}
         if statuses & active:
-            print("")
+            print()
         elif "blocked" in statuses:
             print("blocked")
         elif statuses <= {"done", "deferred"}:
             print("done")
         else:
-            print("")
+            print()
         return
-    print("")
+    print()
 
 
 # ── next ───────────────────────────────────────────────────────────────
@@ -565,7 +601,14 @@ def cmd_next(tasks_file: str, active_prd_file: str | None = None) -> int:
     """Print the next blocker-aware task or subtask ID."""
     try:
         tasks = _load_tasks(tasks_file)
-    except Exception as exc:
+    except (
+        OSError,
+        UnicodeError,
+        ValueError,
+        TypeError,
+        AttributeError,
+        RecursionError,
+    ) as exc:
         print(_format_tasks_load_error("next", tasks_file, exc), file=sys.stderr)
         return 2
 
@@ -577,7 +620,7 @@ def cmd_next(tasks_file: str, active_prd_file: str | None = None) -> int:
         task_status = str(task.get("status") or "")
         if task_status not in ("pending", "in-progress", "review"):
             continue
-        if not all(_dep_done(dep, by_id) for dep in task.get("dependencies", []) or []):
+        if not _task_deps_done(task, by_id):
             continue
 
         parent_id = _int_or_zero(task.get("id"))
@@ -632,8 +675,7 @@ def cmd_fallback_next(tasks_file: str) -> None:
     for task in tasks:
         if task.get("status") not in ("pending", "in-progress", "review"):
             continue
-        deps = [str(d) for d in task.get("dependencies", [])]
-        if not all(_dep_done(d, by_id) for d in deps):
+        if not _task_deps_done(task, by_id):
             continue
         subs = task.get("subtasks", []) or []
         if subs:
@@ -650,7 +692,7 @@ def cmd_fallback_next(tasks_file: str) -> None:
         candidates.sort()
         print(candidates[0][2])
     else:
-        print("")
+        print()
 
 
 # ── collect-parallel ───────────────────────────────────────────────────
@@ -662,14 +704,11 @@ def cmd_collect_parallel(tasks_file: str, limit: int = 4) -> None:
     tasks = _load_tasks(tasks_file)
     by_id = {str(t.get("id")): t for t in tasks}
 
-    def task_deps_done(task: dict) -> bool:
-        return all(_dep_done(dep, by_id) for dep in task.get("dependencies", []) or [])
-
     def extracted_scope(task: dict, sub: dict | None = None) -> list[str]:
         text = _task_scope_text(task, sub)
         paths = set(
             re.findall(
-                r"(?:(?:apps|src|server|tests|docs|scripts|plugins)/[A-Za-z0-9_./@+-]+)",
+                r"(?<![\w./@+-])(?:\./)*((?:apps|src|server|tests|docs|scripts|plugins)/[A-Za-z0-9_./@+-]+)",
                 text,
             )
         )
@@ -698,7 +737,7 @@ def cmd_collect_parallel(tasks_file: str, limit: int = 4) -> None:
         task_status = task.get("status")
         if task_status not in ("pending", "in-progress", "review"):
             continue
-        if not task_deps_done(task):
+        if not _task_deps_done(task, by_id):
             continue
 
         parent_id = str(task.get("id"))
@@ -758,13 +797,10 @@ def cmd_team_skip_reason(tasks_file: str) -> None:
     tasks = _load_tasks(tasks_file)
     by_id = {str(t.get("id")): t for t in tasks}
 
-    def task_deps_done(task: dict) -> bool:
-        return all(_dep_done(dep, by_id) for dep in task.get("dependencies", []) or [])
-
     for task in tasks:
         if task.get("status") not in ("pending", "in-progress", "review"):
             continue
-        if not task_deps_done(task):
+        if not _task_deps_done(task, by_id):
             continue
 
         subtasks = task.get("subtasks", []) or []
@@ -784,7 +820,7 @@ def cmd_team_skip_reason(tasks_file: str) -> None:
                 print(_team_skip_reason_for_prefix(excluded_prefix))
                 return
 
-    print("")
+    print()
 
 
 # ── scope-check ────────────────────────────────────────────────────────
@@ -794,7 +830,14 @@ def cmd_scope_check(tasks_file: str) -> int:
     """Audit active Taskmaster items against Mainspring Method commandments."""
     try:
         tasks = _load_tasks(tasks_file)
-    except Exception as exc:
+    except (
+        OSError,
+        UnicodeError,
+        ValueError,
+        TypeError,
+        AttributeError,
+        RecursionError,
+    ) as exc:
         print(_format_tasks_load_error("scope-check", tasks_file, exc))
         return 2
 

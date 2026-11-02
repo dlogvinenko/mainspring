@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
 """Parse team backend status JSON for Mainspring.
 
@@ -16,52 +15,70 @@ Fields:
     status        Extract .status (empty string on error)
     phase         Extract .phase (empty string on error)
     dead-workers  Extract .workers.dead (0 on error)
+    total-workers Extract .workers.total (0 on error)
     pending-lines Extract .pending_lines (0 on error)
     usable-check  Print "usable" if status=ok, total>0, dead<total; else "bad"
 """
 
 from __future__ import annotations
 
-from cli_runtime import run_cli
-
 import json
 import sys
+
+from cli_runtime import run_cli
+
+
+def _nonnegative_count(value: object) -> int | None:
+    if isinstance(value, bool) or not isinstance(value, (int, str)):
+        return None
+    try:
+        count = int(value)
+    except ValueError:
+        return None
+    return count if count >= 0 else None
 
 
 def parse_field(raw: str, field: str) -> str:
     """Extract *field* from JSON string *raw*."""
     try:
         data = json.loads(raw)
-    except Exception:
-        if field in {"dead-workers", "pending-lines"}:
+    except (ValueError, TypeError, RecursionError):
+        if field in {"dead-workers", "total-workers", "pending-lines"}:
             return "0"
         if field == "usable-check":
             return "bad"
         return ""
 
-    if field == "status":
-        return str(data.get("status", "") or "")
-    if field == "phase":
-        return str(data.get("phase", "") or "")
-    if field == "dead-workers":
-        try:
-            return str(int(data.get("workers", {}).get("dead", 0) or 0))
-        except (TypeError, ValueError):
-            return "0"
+    if not isinstance(data, dict):
+        data = {}
+    workers = data.get("workers")
+    if not isinstance(workers, dict):
+        workers = {}
+
+    if field in {"status", "phase"}:
+        value = data.get(field)
+        return value if isinstance(value, str) else ""
+    if field in {"dead-workers", "total-workers"}:
+        count = _nonnegative_count(
+            workers.get("dead" if field == "dead-workers" else "total")
+        )
+        return str(count if count is not None else 0)
     if field == "pending-lines":
         try:
             return str(int(data.get("pending_lines", 0) or 0))
         except (TypeError, ValueError):
             return "0"
     if field == "usable-check":
-        try:
-            status = data.get("status")
-            total = int(data.get("workers", {}).get("total", 0) or 0)
-            dead = int(data.get("workers", {}).get("dead", 0) or 0)
-            if status == "ok" and total > 0 and dead < total:
-                return "usable"
-        except (TypeError, ValueError):
-            pass
+        total = _nonnegative_count(workers.get("total"))
+        dead = _nonnegative_count(workers.get("dead"))
+        if (
+            data.get("status") == "ok"
+            and total is not None
+            and total > 0
+            and dead is not None
+            and dead < total
+        ):
+            return "usable"
         return "bad"
 
     print(f"Unknown field: {field}", file=sys.stderr)
@@ -72,7 +89,7 @@ def main(argv: list[str] | None = None) -> None:
     args = argv if argv is not None else sys.argv[1:]
     if len(args) < 2 or args[0] != "--field":
         print(
-            "Usage: team_status.py --field <status|phase|dead-workers|pending-lines|usable-check>",
+            "Usage: team_status.py --field <status|phase|dead-workers|total-workers|pending-lines|usable-check>",
             file=sys.stderr,
         )
         raise SystemExit(2)

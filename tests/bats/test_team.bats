@@ -19,6 +19,8 @@ _load_team() {
   fi
   # shellcheck source=../../lib/team.sh
   source "$TEAM_LIB"
+  # shellcheck source=../../lib/team_supervision.sh
+  source "$PROJECT_ROOT/lib/team_supervision.sh"
 }
 
 # Scenario: Team helpers are sourced without the top-level launcher globals.

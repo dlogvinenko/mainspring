@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
 """Fail-closed SWE-bench Verified runner wrapper for Mainspring releases."""
 
@@ -13,7 +12,6 @@ import subprocess
 import sys
 from pathlib import Path
 from typing import Any
-
 
 DEFAULT_DATASET = "princeton-nlp/SWE-bench_Verified"
 DEFAULT_SPLIT = "test"

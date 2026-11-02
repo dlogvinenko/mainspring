@@ -8,8 +8,8 @@ import importlib.util
 import json
 import os
 import pkgutil
-import shutil
 import shlex
+import shutil
 import sys
 from pathlib import Path
 
@@ -40,7 +40,7 @@ def load_adapters() -> dict[str, EngineAdapter]:
         adapter = getattr(module, "ADAPTER", None)
         info = getattr(adapter, "info", None)
         if not isinstance(info, EngineInfo):
-            raise RuntimeError(
+            raise RuntimeError(  # noqa: TRY004 - preserve the documented malformed-data exception contract
                 f"engine module engines.{name} must expose ADAPTER.info as EngineInfo"
             )
         adapters[info.name] = adapter

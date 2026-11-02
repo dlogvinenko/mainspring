@@ -35,7 +35,9 @@ unlock_fd9() {
 acquire_lock() {
   mkdir -p "$(dirname "$LOCK_FILE")"
   touch "$LOCK_FILE"
-  exec 9<>"$LOCK_FILE"
+  # Keep the guard inode stable even when PID-file cleanup removes LOCK_FILE.
+  # Never unlink this guard while a process may have it open.
+  exec 9<>"${LOCK_FILE}.guard"
 
   local lock_status=0
   lock_fd9_nonblocking || lock_status=$?
@@ -47,7 +49,7 @@ acquire_lock() {
     else
       echo "Mainspring could not acquire runtime lock ${LOCK_FILE}; run --doctor for dependency details." >&2
     fi
-    exec 9>&- 2>/dev/null || true
+    { exec 9>&-; } 2>/dev/null || true
     exit 1
   fi
 
@@ -56,7 +58,7 @@ acquire_lock() {
   if [ -n "$existing_pid" ] && [ "$existing_pid" != "$$" ] && kill -0 "$existing_pid" 2>/dev/null; then
     echo "Mainspring already running (pid ${existing_pid}); stop it or wait." >&2
     unlock_fd9
-    exec 9>&- 2>/dev/null || true
+    { exec 9>&-; } 2>/dev/null || true
     exit 1
   fi
 
@@ -64,9 +66,10 @@ acquire_lock() {
 }
 
 release_lock() {
-  unlock_fd9
-  exec 9>&- 2>/dev/null || true
+  # Remove only our advisory PID while the stable guard still excludes writers.
   if [ -f "$LOCK_FILE" ] && [ "$(cat "$LOCK_FILE" 2>/dev/null || true)" = "$$" ]; then
     rm -f "$LOCK_FILE"
   fi
+  unlock_fd9
+  { exec 9>&-; } 2>/dev/null || true
 }

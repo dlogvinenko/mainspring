@@ -13,7 +13,7 @@ import pytest
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 
-from backlog_source import BacklogSourceError, TaskmasterJsonBacklogSource  # noqa: E402
+from backlog_source import BacklogSourceError, TaskmasterJsonBacklogSource
 
 
 def _write_tasks(tmp_path: Path, tasks: list[dict]) -> Path:
@@ -83,6 +83,127 @@ def test_taskmaster_source_skips_unmet_dependencies(tmp_path: Path) -> None:
     source = TaskmasterJsonBacklogSource(tasks_file)
 
     assert [item.id for item in source.list_ready_tasks()] == ["2"]
+
+
+@pytest.mark.parametrize(
+    "dependencies",
+    ["12", "", False, True, 0, 12, {}, {"1": "done", "2": "done"}],
+)
+def test_taskmaster_source_rejects_non_array_task_dependencies(
+    tmp_path: Path, dependencies: object
+) -> None:
+    tasks_file = _write_tasks(
+        tmp_path,
+        [
+            {"id": 1, "status": "done"},
+            {"id": 2, "status": "done"},
+            {"id": 12, "status": "pending", "dependencies": []},
+            {"id": 20, "status": "pending", "dependencies": dependencies},
+        ],
+    )
+
+    assert [
+        item.id for item in TaskmasterJsonBacklogSource(tasks_file).list_ready_tasks()
+    ] == ["12"]
+
+
+@pytest.mark.parametrize(
+    "dependencies",
+    ["12", "", False, True, 0, 12, {}, {"1": "done", "2": "done"}],
+)
+def test_taskmaster_source_rejects_non_array_subtask_dependencies(
+    tmp_path: Path, dependencies: object
+) -> None:
+    tasks_file = _write_tasks(
+        tmp_path,
+        [
+            {
+                "id": 20,
+                "status": "pending",
+                "dependencies": [],
+                "subtasks": [
+                    {"id": 1, "status": "done"},
+                    {"id": 2, "status": "done"},
+                    {"id": 12, "status": "pending", "dependencies": []},
+                    {"id": 13, "status": "pending", "dependencies": dependencies},
+                ],
+            }
+        ],
+    )
+
+    assert [
+        item.id for item in TaskmasterJsonBacklogSource(tasks_file).list_ready_tasks()
+    ] == ["20.12"]
+
+
+@pytest.mark.parametrize("subtask", [False, True])
+@pytest.mark.parametrize("dependency_id", [12, "12"])
+def test_taskmaster_source_dependency_arrays_still_wait_for_done(
+    tmp_path: Path, subtask: bool, dependency_id: int | str
+) -> None:
+    prerequisite = {"id": 12, "status": "pending", "dependencies": []}
+    dependent = {"id": 20, "status": "pending", "dependencies": [dependency_id]}
+    if subtask:
+        dependent["id"] = 13
+        tasks = [{"id": 20, "status": "pending", "subtasks": [prerequisite, dependent]}]
+        expected_pending = ["20.12"]
+        expected_ready = ["20.13"]
+    else:
+        tasks = [prerequisite, dependent]
+        expected_pending = ["12"]
+        expected_ready = ["20"]
+    tasks_file = _write_tasks(tmp_path, tasks)
+    source = TaskmasterJsonBacklogSource(tasks_file)
+
+    assert [item.id for item in source.list_ready_tasks()] == expected_pending
+    prerequisite["status"] = "done"
+    _write_tasks(tmp_path, tasks)
+    assert [item.id for item in source.list_ready_tasks()] == expected_ready
+
+
+@pytest.mark.parametrize("subtask", [False, True])
+def test_taskmaster_source_missing_and_empty_dependency_arrays_stay_ready(
+    tmp_path: Path, subtask: bool
+) -> None:
+    ready = [
+        {"id": 12, "status": "pending"},
+        {"id": 13, "status": "pending", "dependencies": []},
+        {"id": 14, "status": "pending", "dependencies": None},
+        {"id": 15, "status": "done", "dependencies": "12"},
+    ]
+    tasks = [{"id": 20, "status": "pending", "subtasks": ready}] if subtask else ready
+    tasks_file = _write_tasks(tmp_path, tasks)
+    expected = ["20.12", "20.13", "20.14"] if subtask else ["12", "13", "14"]
+
+    assert [
+        item.id for item in TaskmasterJsonBacklogSource(tasks_file).list_ready_tasks()
+    ] == expected
+
+
+def test_taskmaster_source_dependency_arrays_keep_exact_sibling_id_matching(
+    tmp_path: Path,
+) -> None:
+    # Compatibility control only; no new dotted or cross-parent resolution policy.
+    tasks_file = _write_tasks(
+        tmp_path,
+        [
+            {"id": 7, "status": "done", "subtasks": [{"id": 1, "status": "done"}]},
+            {
+                "id": 20,
+                "status": "pending",
+                "subtasks": [
+                    {"id": 1, "status": "done"},
+                    {"id": 2, "status": "pending", "dependencies": ["7.1"]},
+                    {"id": 3, "status": "pending", "dependencies": ["20.1"]},
+                    {"id": 4, "status": "pending", "dependencies": [1]},
+                ],
+            },
+        ],
+    )
+
+    assert [
+        item.id for item in TaskmasterJsonBacklogSource(tasks_file).list_ready_tasks()
+    ] == ["20.4"]
 
 
 def test_taskmaster_source_get_details_for_subtask(tmp_path: Path) -> None:

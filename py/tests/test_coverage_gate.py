@@ -14,7 +14,7 @@ import pytest
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 
-import coverage_gate  # noqa: E402
+import coverage_gate
 
 SCRIPT = HERE.parent / "coverage_gate.py"
 
@@ -22,29 +22,25 @@ SCRIPT = HERE.parent / "coverage_gate.py"
 def _write_sample_project(root: Path) -> None:
     (root / "tests").mkdir()
     (root / "sample.py").write_text(
-        "\n".join(
-            [
-                "def used(value):",
-                "    if value:",
-                "        return 'yes'",
-                "    return 'no'",
-                "",
-                "def unused():",
-                "    return 'never'",
-                "",
-            ]
+        (
+            "def used(value):\n"
+            "    if value:\n"
+            "        return 'yes'\n"
+            "    return 'no'\n"
+            "\n"
+            "def unused():\n"
+            "    return 'never'\n"
+            ""
         ),
         encoding="utf-8",
     )
     (root / "tests" / "test_sample.py").write_text(
-        "\n".join(
-            [
-                "import sample",
-                "",
-                "def test_used_branch():",
-                "    assert sample.used(True) == 'yes'",
-                "",
-            ]
+        (
+            "import sample\n"
+            "\n"
+            "def test_used_branch():\n"
+            "    assert sample.used(True) == 'yes'\n"
+            ""
         ),
         encoding="utf-8",
     )
@@ -75,16 +71,7 @@ def test_iter_source_files_excludes_tests_and_generated_dirs(tmp_path: Path) -> 
 def test_summarize_coverage_uses_executable_line_intersection(tmp_path: Path) -> None:
     source = tmp_path / "module.py"
     source.write_text(
-        "\n".join(
-            [
-                "def first():",
-                "    return 1",
-                "",
-                "def second():",
-                "    return 2",
-                "",
-            ]
-        ),
+        ("def first():\n    return 1\n\ndef second():\n    return 2\n"),
         encoding="utf-8",
     )
     executable = coverage_gate.executable_lines(source)
@@ -274,14 +261,12 @@ def test_trace_python_subprocesses_preserves_subprocess_result_shape(
 ) -> None:
     text_script = tmp_path / "text_helper.py"
     text_script.write_text(
-        "\n".join(
-            [
-                "import os",
-                "import sys",
-                "print(f'argv={sys.argv[1]}')",
-                "print(f'cwd={os.getcwd()}')",
-                "print(f'env={os.environ.get(\"TRACE_GATE_TEST\")}', file=sys.stderr)",
-            ]
+        (
+            "import os\n"
+            "import sys\n"
+            "print(f'argv={sys.argv[1]}')\n"
+            "print(f'cwd={os.getcwd()}')\n"
+            "print(f'env={os.environ.get(\"TRACE_GATE_TEST\")}', file=sys.stderr)"
         ),
         encoding="utf-8",
     )
@@ -298,10 +283,12 @@ def test_trace_python_subprocesses_preserves_subprocess_result_shape(
             text=True,
             cwd=tmp_path,
             env={"TRACE_GATE_TEST": "configured"},
+            check=False,
         )
         binary_result = subprocess.run(
             [sys.executable, str(binary_script)],
             capture_output=True,
+            check=False,
         )
 
     assert text_result.returncode == 0
@@ -317,12 +304,13 @@ def test_trace_python_subprocesses_fallbacks_and_check_error(tmp_path: Path) -> 
     script.write_text("raise SystemExit(7)\n", encoding="utf-8")
 
     with coverage_gate._trace_python_subprocesses(tmp_path):
-        no_capture = subprocess.run([sys.executable, str(script)])
+        no_capture = subprocess.run([sys.executable, str(script)], check=False)
         with_input = subprocess.run(
             [sys.executable, str(script)],
             input="ignored",
             capture_output=True,
             text=True,
+            check=False,
         )
         with pytest.raises(subprocess.CalledProcessError) as exc:
             subprocess.run(
@@ -437,6 +425,7 @@ def test_cli_json_mode_is_clean(tmp_path: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -466,6 +455,7 @@ def test_cli_text_mode_fails_below_threshold(tmp_path: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 1

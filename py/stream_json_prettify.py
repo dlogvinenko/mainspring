@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
 """Pretty-print Claude --output-format stream-json events.
 
@@ -28,17 +27,16 @@ in a subshell (SC2031). Example:
 
 from __future__ import annotations
 
-from cli_runtime import run_cli
-
 import argparse
 import json
 import os
 import sys
+from contextlib import ExitStack
+
+from cli_runtime import run_cli
 
 
-def _make_writer(display_path: str | None):
-    display_fp = open(display_path, "a", encoding="utf-8") if display_path else None
-
+def _make_writer(display_fp):
     def out(text: str) -> None:
         sys.stdout.write(text)
         sys.stdout.flush()
@@ -46,10 +44,12 @@ def _make_writer(display_path: str | None):
             display_fp.write(text)
             display_fp.flush()
 
-    return out, display_fp
+    return out
 
 
-def _handle_event(obj: dict, mode: str, out) -> None:
+def _handle_event(obj: object, mode: str, out) -> None:
+    if not isinstance(obj, dict):
+        return
     engine_label = "claude" if mode == "writer" else "review-claude"
     tool_label = "tool" if mode == "writer" else "review-tool"
     complete_msg = "turn complete" if mode == "writer" else "review complete"
@@ -64,17 +64,21 @@ def _handle_event(obj: dict, mode: str, out) -> None:
 
     if t == "stream_event":
         event = obj.get("event", {})
+        if not isinstance(event, dict):
+            return
         et = event.get("type")
 
         if et == "content_block_delta":
             delta = event.get("delta", {})
-            if delta.get("type") == "text_delta":
-                out(delta.get("text", ""))
+            if isinstance(delta, dict) and delta.get("type") == "text_delta":
+                text = delta.get("text", "")
+                if isinstance(text, str):
+                    out(text)
             return
 
         if et == "content_block_start":
             block = event.get("content_block", {})
-            if block.get("type") == "tool_use":
+            if isinstance(block, dict) and block.get("type") == "tool_use":
                 name = block.get("name", "tool")
                 out(f"\n[{tool_label}] {name}\n")
             return
@@ -87,10 +91,19 @@ def _handle_event(obj: dict, mode: str, out) -> None:
 
     if t == "assistant":
         msg = obj.get("message", {})
-        for block in msg.get("content", []) or []:
+        if not isinstance(msg, dict):
+            return
+        content = msg.get("content", [])
+        if not isinstance(content, list):
+            return
+        for block in content:
+            if not isinstance(block, dict):
+                continue
             if block.get("type") == "tool_use":
                 name = block.get("name", "tool")
                 tool_input = block.get("input") or {}
+                if not isinstance(tool_input, dict):
+                    tool_input = {}
                 description = tool_input.get("description")
                 command = tool_input.get("command")
                 if description:
@@ -109,6 +122,10 @@ def _handle_event(obj: dict, mode: str, out) -> None:
         if isinstance(tool_result, dict):
             stdout_v = tool_result.get("stdout", "") or ""
             stderr_v = tool_result.get("stderr", "") or ""
+            if not isinstance(stdout_v, str):
+                stdout_v = ""
+            if not isinstance(stderr_v, str):
+                stderr_v = ""
             if stdout_v.strip():
                 preview = stdout_v.strip().splitlines()[0]
                 out(f"[tool-result] {preview}\n")
@@ -141,22 +158,22 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     display_path = os.environ.get("CLAUDE_DISPLAY_FILE")
-    out, display_fp = _make_writer(display_path)
-
-    try:
+    with ExitStack() as stack:
+        display_fp = (
+            stack.enter_context(open(display_path, "a", encoding="utf-8"))
+            if display_path
+            else None
+        )
+        out = _make_writer(display_fp)
         for raw in sys.stdin:
             line = raw.strip()
             if not line:
                 continue
             try:
                 obj = json.loads(line)
-            except Exception:
+            except (ValueError, TypeError, RecursionError):
                 continue
             _handle_event(obj, args.mode, out)
-    finally:
-        if display_fp:
-            display_fp.close()
-
     return 0
 
 

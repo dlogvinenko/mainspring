@@ -6,7 +6,6 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DOC = REPO_ROOT / "docs" / "competitive-analysis.md"
 PRD = REPO_ROOT / "docs" / "prd.md"
@@ -158,7 +157,7 @@ def test_prd_points_to_refreshed_competitive_analysis() -> None:
     assert "Competitor landscape / competitive positioning (June 2026 refresh)" in prd
     assert "[`docs/competitive-analysis.md`](competitive-analysis.md)" in prd
     assert "**Snapshot date:** 2026-06-14" in prd
-    assert "_Last edited: 2026-06-15." in prd
+    assert "_Last edited: 2026-11-02." in prd
     assert "release-" + "status box" not in prd
     assert "no unsupported release-management CLI commands" in prd
     assert "publication-only helper commands" not in prd

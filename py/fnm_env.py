@@ -1,15 +1,13 @@
-#!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
 """Convert ``fnm env --json`` output into safe shell assignment lines."""
 
 from __future__ import annotations
 
-from cli_runtime import run_cli
-
 import json
 import sys
 from typing import TextIO
 
+from cli_runtime import run_cli
 
 ALLOWED_FNM_KEYS = (
     "FNM_COREPACK_ENABLED",
@@ -30,7 +28,7 @@ def _clean_env_value(value: object) -> str:
 def emit_assignments(stdin: TextIO = sys.stdin, stdout: TextIO = sys.stdout) -> int:
     try:
         payload = json.load(stdin)
-    except Exception:
+    except (OSError, UnicodeError, ValueError, TypeError, RecursionError):
         return 1
     if not isinstance(payload, dict):
         return 1

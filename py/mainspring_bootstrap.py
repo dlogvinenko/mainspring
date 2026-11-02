@@ -1,17 +1,16 @@
-#!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
 """Console-script bootstrap for packaged Mainspring installs."""
 
 from __future__ import annotations
 
-from cli_runtime import run_cli
-
 import os
 import shutil
 import sys
+from collections.abc import Iterable
 from importlib import metadata
 from pathlib import Path
-from typing import Iterable
+
+from cli_runtime import run_cli
 
 
 def candidate_script_paths() -> list[Path]:

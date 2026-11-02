@@ -11,13 +11,12 @@ from pathlib import Path
 
 import pytest
 
-
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "py" / "fresh_clone_smoke.py"
 MAKEFILE = ROOT / "Makefile"
 sys.path.insert(0, str(ROOT / "py"))
 
-import fresh_clone_smoke  # noqa: E402
+import fresh_clone_smoke
 
 
 def _run(

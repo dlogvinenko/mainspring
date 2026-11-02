@@ -161,7 +161,15 @@ mainspring_load_fnm_env_json() {
   command -v fnm >/dev/null 2>&1 || return 1
   command -v python3 >/dev/null 2>&1 || return 1
 
-  local fnm_line fnm_key fnm_value fnm_loaded=false
+  local fnm_line fnm_key fnm_value fnm_output fnm_loaded=false
+  fnm_output="$(
+    if fnm env --json 2>/dev/null | python3 "$MAINSPRING_PY_DIR/fnm_env.py"; then
+      exit 0
+    else
+      # The helper is the second pipeline entry; its failure rejects all output.
+      exit "${PIPESTATUS[1]}"
+    fi
+  )" || return 1
   while IFS= read -r fnm_line; do
     fnm_key="${fnm_line%%=*}"
     fnm_value="${fnm_line#*=}"
@@ -174,7 +182,7 @@ mainspring_load_fnm_env_json() {
         export "$fnm_key=$fnm_value"
         ;;
     esac
-  done < <(fnm env --json 2>/dev/null | python3 "$MAINSPRING_PY_DIR/fnm_env.py")
+  done <<< "$fnm_output"
   [ "$fnm_loaded" = true ]
 }
 
@@ -353,6 +361,7 @@ source "$SCRIPT_DIR/lib/self_test.sh"
 source "$SCRIPT_DIR/lib/review.sh"
 source "$SCRIPT_DIR/lib/write_scope.sh"
 source "$SCRIPT_DIR/lib/team.sh"
+source "$SCRIPT_DIR/lib/team_supervision.sh"
 source "$SCRIPT_DIR/lib/help.sh"
 source "$SCRIPT_DIR/lib/work_mode_help.sh"
 source "$SCRIPT_DIR/lib/prompts.sh"
@@ -371,7 +380,48 @@ cleanup_children() {
     ACTIVE_HEARTBEAT_PID=""
   fi
   if [ -n "${ACTIVE_CHILD_PID:-}" ]; then
-    kill "$ACTIVE_CHILD_PID" >/dev/null 2>&1 || true
+    # Snapshot the owned pipeline and its descendants before signalling parents.
+    # A CLI may ignore TERM or leave subprocesses behind when its parent exits.
+    local pid pid_list="" live_pid_list attempt stop_signal
+    local -a active_pids=()
+    while IFS= read -r pid; do
+      active_pids+=("$pid")
+      pid_list="${pid_list:+$pid_list,}$pid"
+    done < <(ps -axo pid=,ppid= | awk -v root="$ACTIVE_CHILD_PID" '
+      { parent[$1] = $2 }
+      END {
+        for (pid in parent) {
+          ancestor = pid
+          while (ancestor in parent && ancestor != root && parent[ancestor] != ancestor)
+            ancestor = parent[ancestor]
+          if (ancestor == root) print pid
+        }
+      }')
+    if [ "${#active_pids[@]}" -eq 0 ]; then
+      active_pids=("$ACTIVE_CHILD_PID")
+      pid_list="$ACTIVE_CHILD_PID"
+    fi
+    for stop_signal in TERM KILL; do
+      attempt=0
+      while :; do
+        # Permanently drop exited/zombie IDs before signalling or escalating.
+        active_pids=()
+        live_pid_list=""
+        while IFS= read -r pid; do
+          active_pids+=("$pid")
+          live_pid_list="${live_pid_list:+$live_pid_list,}$pid"
+        done < <(ps -o pid=,stat= -p "$pid_list" 2>/dev/null |
+          awk '$2 !~ /^Z/ { print $1 }')
+        pid_list="$live_pid_list"
+        [ -n "$pid_list" ] || break 2
+        if [ "$attempt" -eq 0 ]; then
+          kill -"$stop_signal" "${active_pids[@]}" >/dev/null 2>&1 || true
+        fi
+        [ "$attempt" -lt 20 ] || break
+        sleep 0.1
+        attempt=$((attempt + 1))
+      done
+    done
     wait "$ACTIVE_CHILD_PID" >/dev/null 2>&1 || true
     ACTIVE_CHILD_PID=""
   fi
@@ -379,7 +429,17 @@ cleanup_children() {
   release_lock
 }
 
-trap cleanup_children EXIT INT TERM
+# A signal must end the run: returning from the trap would resume the wave loop
+# without the lock. Exit with the conventional 128+signal status.
+stop_on_signal() {
+  trap - INT TERM
+  cleanup_children
+  exit "$1"
+}
+
+trap cleanup_children EXIT
+trap 'stop_on_signal 130' INT
+trap 'stop_on_signal 143' TERM
 
 # ---------------------------------------------------------------------------
 # CLI parsing and runtime dispatch

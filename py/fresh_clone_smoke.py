@@ -1,10 +1,7 @@
-#!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
 """Run the release smoke gate from a clean fresh clone of HEAD."""
 
 from __future__ import annotations
-
-from cli_runtime import run_cli
 
 import argparse
 import json
@@ -14,6 +11,8 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+
+from cli_runtime import run_cli
 
 
 class FreshCloneSmokeError(RuntimeError):

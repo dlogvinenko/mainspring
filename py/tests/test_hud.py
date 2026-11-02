@@ -15,7 +15,7 @@ import pytest
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 
-import hud  # noqa: E402
+import hud
 
 SCRIPT = str(HERE.parent / "hud.py")
 MAINSPRING_DIR = HERE.parent.parent
@@ -243,15 +243,13 @@ def test_build_snapshot_includes_live_runtime_context(
         encoding="utf-8",
     )
     (state_dir.parent / "last-run.env").write_text(
-        "\n".join(
-            [
-                "MODE=night",
-                "TOPOLOGY=solo",
-                "PAIR_MODE=codex+codex",
-                "SPEED_PROFILE=max",
-                "MAX_AGENTS=6",
-                "PRD_PATH=docs/prd.md",
-            ]
+        (
+            "MODE=night\n"
+            "TOPOLOGY=solo\n"
+            "PAIR_MODE=codex+codex\n"
+            "SPEED_PROFILE=max\n"
+            "MAX_AGENTS=6\n"
+            "PRD_PATH=docs/prd.md"
         ),
         encoding="utf-8",
     )
@@ -506,13 +504,7 @@ def test_build_snapshot_falls_back_to_prd_checkbox_progress(tmp_path: Path) -> N
     docs.mkdir(parents=True)
     _write_ledger(ledger)
     (docs / "prd.md").write_text(
-        "\n".join(
-            [
-                "# Product Requirements Document (PRD)",
-                "- [x] Shipped",
-                "- [ ] Remaining",
-            ]
-        ),
+        ("# Product Requirements Document (PRD)\n- [x] Shipped\n- [ ] Remaining"),
         encoding="utf-8",
     )
 
@@ -1689,6 +1681,7 @@ def test_cli_json_outputs_snapshot(tmp_path: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -1723,6 +1716,7 @@ def test_cli_global_json_outputs_machine_snapshot(tmp_path: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -1730,6 +1724,49 @@ def test_cli_global_json_outputs_machine_snapshot(tmp_path: Path) -> None:
     assert payload["scope"] == "global"
     assert payload["run_count"] >= 1
     assert any(run["project"] == "global-app" for run in payload["runs"])
+
+
+@pytest.mark.parametrize("rich_available", [True, False])
+def test_cli_no_args_uses_live_renderer_in_tty(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    rich_available: bool,
+) -> None:
+    runtime_dir = tmp_path / ".mainspring"
+    calls: list[tuple[str, tuple, dict]] = []
+    availability_calls: list[bool] = []
+
+    class TtyStdout:
+        def isatty(self) -> bool:
+            return True
+
+    def rich_is_available() -> bool:
+        availability_calls.append(rich_available)
+        return rich_available
+
+    monkeypatch.setattr(hud.sys, "stdout", TtyStdout())
+    monkeypatch.setattr(hud, "_default_runtime_dir", lambda: runtime_dir)
+    monkeypatch.delenv("MAINSPRING_STATE_DIR", raising=False)
+    monkeypatch.setattr(hud, "_rich_available", rich_is_available)
+    monkeypatch.setattr(
+        hud,
+        "rich_live_snapshot",
+        lambda *args, **kwargs: calls.append(("rich", args, kwargs)),
+    )
+    monkeypatch.setattr(
+        hud,
+        "watch_snapshot",
+        lambda *args, **kwargs: calls.append(("plain", args, kwargs)),
+    )
+
+    assert hud._cli_main([]) == 0
+    assert availability_calls == [rich_available]
+    assert len(calls) == 1
+    renderer, args, kwargs = calls[0]
+    assert renderer == ("rich" if rich_available else "plain")
+    assert args == (runtime_dir / "logs" / "waves.jsonl", runtime_dir / "state")
+    assert kwargs["global_scope"] is False
+    assert kwargs["iterations"] is None
 
 
 def test_cli_auto_live_promotes_plain_hud_to_rich_watch_in_tty(
@@ -1843,6 +1880,7 @@ def test_cli_width_limits_text_output(tmp_path: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -1874,6 +1912,7 @@ def test_cli_watch_renders_bounded_refresh_frames(tmp_path: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -1905,6 +1944,7 @@ def test_cli_watch_defaults_to_plain_frames_when_captured(tmp_path: Path) -> Non
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -1935,6 +1975,7 @@ def test_cli_watch_no_ansi_overrides_terminal_redraw(tmp_path: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -1990,6 +2031,7 @@ def test_cli_no_args_stays_one_shot_when_output_is_captured(tmp_path: Path) -> N
         capture_output=True,
         text=True,
         timeout=5,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -2008,6 +2050,7 @@ def test_top_level_hud_auto_live_stays_one_shot_when_output_is_captured(
         capture_output=True,
         text=True,
         timeout=5,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -2040,6 +2083,7 @@ def test_cli_rich_renders_bounded_live_snapshot(tmp_path: Path, width: int) -> N
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -2073,6 +2117,7 @@ def test_cli_rich_once_renders_single_bounded_live_snapshot(tmp_path: Path) -> N
         capture_output=True,
         text=True,
         timeout=5,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -2110,6 +2155,7 @@ def test_cli_rich_watch_renders_live_hud(tmp_path: Path) -> None:
         capture_output=True,
         text=True,
         timeout=5,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -2132,6 +2178,7 @@ def test_mainspring_requirements_declares_runtime_dependencies() -> None:
     assert runtime_lines == [
         "rich>=13.7,<15",
         'litellm>=1.83.11,<2; python_version < "3.14"',
+        'filelock>=4.2.1,<5; python_version < "3.14"',
         'aiohttp>=3.14.0; python_version < "3.14"',
         'python-dotenv>=1.2.2; python_version < "3.14"',
     ]
@@ -2166,6 +2213,7 @@ def test_cli_watch_rejects_json_output(tmp_path: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 2
@@ -2191,6 +2239,7 @@ def test_cli_iterations_requires_watch(tmp_path: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 2
@@ -2217,6 +2266,7 @@ def test_cli_rejects_invalid_since_filter(tmp_path: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 2
@@ -2243,6 +2293,7 @@ def test_cli_rejects_negative_since_duration(tmp_path: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 2
@@ -2263,6 +2314,7 @@ def test_cli_rejects_missing_option_values() -> None:
             [sys.executable, SCRIPT, flag],
             capture_output=True,
             text=True,
+            check=False,
         )
 
         assert result.returncode == 2
@@ -2274,6 +2326,7 @@ def test_cli_help_exits_zero() -> None:
         [sys.executable, SCRIPT, "--help"],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 0

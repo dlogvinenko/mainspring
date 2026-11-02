@@ -1,23 +1,20 @@
-#!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
 """Operator-glance quota and spend limits for Mainspring."""
 
 from __future__ import annotations
 
-from cli_runtime import run_cli
-
 import json
 import os
 import sys
 import textwrap
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import metrics
+from cli_runtime import run_cli
 from engine_quota import engine_snapshot
 from engines.registry import load_engines, readiness_errors
 from notify_telegram import extract_wave_cost
-
 
 BAR_WIDTH = 10
 HELP_TEXT = """Usage: mainspring limits [engine ...] [--engine <name>] [--format text|json] [--hours N]
@@ -35,11 +32,11 @@ Examples:
 
 
 def _utcnow() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def _iso_z(dt: datetime) -> str:
-    return dt.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+    return dt.astimezone(UTC).isoformat().replace("+00:00", "Z")
 
 
 def _parse_ts(value: object) -> datetime | None:
@@ -54,13 +51,13 @@ def _parse_ts(value: object) -> datetime | None:
         if numeric > 0:
             if numeric > 10_000_000_000:
                 numeric = numeric / 1000.0
-            return datetime.fromtimestamp(numeric, tz=timezone.utc)
+            return datetime.fromtimestamp(numeric, tz=UTC)
     try:
-        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))  # noqa: FURB162 - preserve rejection of malformed Z separators
     except ValueError:
         return None
     if parsed.tzinfo is None:
-        return parsed.replace(tzinfo=timezone.utc)
+        return parsed.replace(tzinfo=UTC)
     return parsed
 
 
@@ -101,8 +98,7 @@ def _format_reset(value: object, now: datetime) -> str:
 
 
 def _quota_has_signal(quota: dict) -> bool:
-    if str(quota.get("source") or "missing") != "missing":
-        return True
+    # Provenance alone does not establish observed quota or readiness data.
     if str(quota.get("status") or "unknown") != "unknown":
         return True
     if str(quota.get("plan") or "unknown") != "unknown":

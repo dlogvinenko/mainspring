@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
 """Mainspring metrics reader — query waves.jsonl for operational insights.
 
@@ -17,17 +16,15 @@ Answers the 7 standard questions:
 
 from __future__ import annotations
 
-from cli_runtime import run_cli
-
 import json
 import sys
 from collections import Counter, defaultdict
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from statistics import median
 
+from cli_runtime import run_cli
 from failure_taxonomy import normalise_failure_reason_class
-
 
 AUTO_DISABLE_WINDOW_DAYS = 14
 AUTO_DISABLE_THRESHOLD_RATIO = 0.7
@@ -35,7 +32,7 @@ LOW_COST_MODEL_MARKERS = ("mini", "haiku", "spark", "fast", "cheap")
 
 
 def read_ledger(path: Path) -> list[dict]:
-    """Parse all valid JSONL entries from *path*."""
+    """Read wave objects, skipping malformed JSON and non-object rows."""
     entries: list[dict] = []
     if not path.is_file():
         return entries
@@ -44,8 +41,10 @@ def read_ledger(path: Path) -> list[dict]:
         if not raw:
             continue
         try:
-            entries.append(json.loads(raw))
-        except Exception:
+            parsed = json.loads(raw)
+            if isinstance(parsed, dict):
+                entries.append(parsed)
+        except (ValueError, TypeError, RecursionError):
             continue
     return entries
 
@@ -55,8 +54,9 @@ def _parse_timestamp(entry: dict) -> datetime | None:
     if not ts:
         return None
     try:
-        return datetime.fromisoformat(ts.replace("Z", "+00:00"))
-    except Exception:
+        parsed = datetime.fromisoformat(ts.replace("Z", "+00:00"))  # noqa: FURB162 - preserve rejection of malformed Z separators
+        return parsed if parsed.tzinfo is not None else None
+    except (AttributeError, TypeError, ValueError, OverflowError):
         return None
 
 
@@ -72,8 +72,8 @@ def _get_pair(entry: dict) -> str:
 
 def _is_success(entry: dict) -> bool:
     verdict = str(entry.get("verdict") or "").upper()
-    exit_code = entry.get("exit_code", 0)
-    return verdict == "PASS" and exit_code == 0
+    exit_code = entry.get("exit_code")
+    return verdict == "PASS" and type(exit_code) is int and exit_code == 0
 
 
 def _parse_float(value: object) -> float | None:
@@ -140,9 +140,7 @@ def _task_class(entry: dict) -> str:
     if any(part.startswith("tests/") for part in files) or ".test." in haystack:
         return "tests"
     if files and all(
-        part.startswith("docs/")
-        or part.endswith(".md")
-        or part.startswith(".taskmaster/")
+        part.startswith(("docs/", ".taskmaster/")) or part.endswith(".md")
         for part in files
     ):
         return "docs"
@@ -163,11 +161,11 @@ def filter_entries(
 
     cutoff: datetime | None = None
     if days is not None:
-        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+        cutoff = datetime.now(UTC) - timedelta(days=days)
     elif since is not None:
         try:
-            cutoff = datetime.fromisoformat(since).replace(tzinfo=timezone.utc)
-        except Exception:
+            cutoff = datetime.fromisoformat(since).replace(tzinfo=UTC)
+        except (TypeError, ValueError, OverflowError):
             pass
 
     if cutoff is not None:
@@ -542,7 +540,7 @@ def update_disabled_pairs_state(
         (previous_auto_disabled | new_auto_disabled | manual_disabled) - reactivated
     )
 
-    timestamp = (now or datetime.now(timezone.utc)).isoformat().replace("+00:00", "Z")
+    timestamp = (now or datetime.now(UTC)).isoformat().replace("+00:00", "Z")
     pair_details = {}
     recommendation_by_pair = {
         str(item["pair"]): item for item in auto_disable.get("pairs", [])

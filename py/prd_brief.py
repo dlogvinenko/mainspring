@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
 """PRD brief generator for Mainspring.
 
@@ -11,11 +10,11 @@ Usage:
 
 from __future__ import annotations
 
-from cli_runtime import run_cli
-
 import re
 import sys
 from pathlib import Path
+
+from cli_runtime import run_cli
 
 IMPORTANT_KEYWORDS = (
     "Vision",
@@ -84,7 +83,10 @@ def build_brief(prd_path: str, max_chars: int = 6000) -> str:
 
     summary = "\n".join(summary_parts)
     if len(summary) > max_chars:
-        summary = summary[: max_chars - 32].rstrip() + "\n... [truncated]"
+        if 0 <= max_chars < 32:
+            summary = "\n... [truncated]"[:max_chars]
+        else:
+            summary = summary[: max_chars - 32].rstrip() + "\n... [truncated]"
     return summary
 
 

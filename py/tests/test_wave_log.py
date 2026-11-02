@@ -8,10 +8,12 @@ import os
 import sys
 from pathlib import Path
 
+import pytest
+
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 
-import wave_log  # noqa: E402
+import wave_log
 
 
 def _set_wave_env(**overrides: str) -> dict[str, str]:
@@ -132,23 +134,21 @@ def test_build_wave_entry_happy_path() -> None:
 # Expected: product_files_changed counts only the source/product path.
 def test_build_wave_entry_counts_only_product_files() -> None:
     _set_wave_env(
-        CHANGED_FILES_VALUE="\n".join(
-            [
-                ".pytest_cache/v/cache/nodeids",
-                ".ruff_cache/0.15.11/cache",
-                ".taskmaster/tasks/tasks.json",
-                ".gradle/8.10.2/fileHashes/fileHashes.bin",
-                "build/test-results/test/TEST-Foo.xml",
-                "dist/assets/app.js",
-                "target/classes/App.class",
-                "server/tracker.db-shm",
-                "server/tracker.db-wal",
-                "py/__pycache__/wave_log.cpython-314.pyc",
-                "AGENTS.md",
-                "README.md",
-                "docs/prd.md",
-                "py/wave_log.py",
-            ]
+        CHANGED_FILES_VALUE=(
+            ".pytest_cache/v/cache/nodeids\n"
+            ".ruff_cache/0.15.11/cache\n"
+            ".taskmaster/tasks/tasks.json\n"
+            ".gradle/8.10.2/fileHashes/fileHashes.bin\n"
+            "build/test-results/test/TEST-Foo.xml\n"
+            "dist/assets/app.js\n"
+            "target/classes/App.class\n"
+            "server/tracker.db-shm\n"
+            "server/tracker.db-wal\n"
+            "py/__pycache__/wave_log.cpython-314.pyc\n"
+            "AGENTS.md\n"
+            "README.md\n"
+            "docs/prd.md\n"
+            "py/wave_log.py"
         )
     )
     try:
@@ -449,6 +449,7 @@ def test_cmd_append_valid_json(tmp_path: Path) -> None:
             capture_output=True,
             text=True,
             env={**os.environ},
+            check=False,
         )
         assert result.returncode == 0
         line = result.stdout.strip()
@@ -474,6 +475,7 @@ def test_last_summary_empty(tmp_path: Path, capsys: object) -> None:
         [sys.executable, str(HERE.parent / "wave_log.py"), "last-summary", str(ledger)],
         capture_output=True,
         text=True,
+        check=True,
     )
     assert "last-wave: none" in result.stdout
 
@@ -492,6 +494,7 @@ def test_last_summary_missing_file(tmp_path: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        check=True,
     )
     assert "last-wave: none" in result.stdout
 
@@ -522,6 +525,7 @@ def test_last_summary_shows_last_entry(tmp_path: Path) -> None:
         [sys.executable, str(HERE.parent / "wave_log.py"), "last-summary", str(ledger)],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert "id=w2" in result.stdout
     assert "mode=night" in result.stdout
@@ -547,6 +551,7 @@ def test_routing_hints_empty(tmp_path: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        check=True,
     )
     assert "no wave metrics yet" in result.stdout
 
@@ -568,6 +573,7 @@ def test_routing_hints_repeated_failures(tmp_path: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert "stop/review recommended" in result.stdout
 
@@ -593,6 +599,7 @@ def test_routing_hints_review_failures(tmp_path: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        check=True,
     )
     assert "retry same item in solo mode" in result.stdout
 
@@ -622,6 +629,7 @@ def test_routing_hints_team_no_parallel(tmp_path: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        check=True,
     )
     assert "use solo mode" in result.stdout
 
@@ -643,6 +651,7 @@ def test_routing_hints_no_failures(tmp_path: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        check=True,
     )
     assert "no failure trend detected" in result.stdout
 
@@ -740,3 +749,79 @@ def test_read_ledger_skips_invalid(tmp_path: Path) -> None:
     assert len(entries) == 2
     assert entries[0]["ok"] is True
     assert entries[1]["also"] == "ok"
+
+
+# Reader shape guard: syntactically valid scalar/array values are not wave rows.
+NON_OBJECT_JSON = ["[]", "[1,2]", '"text"', "0", "1.25", "true", "false", "null"]
+
+
+def _run_private_reader(command: str, ledger: Path):
+    import subprocess
+
+    return subprocess.run(
+        [sys.executable, str(HERE.parent / "wave_log.py"), command, str(ledger)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+def test_read_ledger_skips_valid_non_object_rows(tmp_path: Path) -> None:
+    ledger = tmp_path / "synthetic-waves.jsonl"
+    ledger.write_text(
+        '{"wave_id":"first"}\n{}\n'
+        + "\n".join(NON_OBJECT_JSON)
+        + '\nnot json\n{"wave_id":"last"}\n'
+    )
+    assert wave_log.read_ledger(ledger) == [
+        {"wave_id": "first"},
+        {},
+        {"wave_id": "last"},
+    ]
+
+
+@pytest.mark.parametrize("bad_row", NON_OBJECT_JSON)
+def test_last_summary_ignores_non_object_rows(tmp_path: Path, bad_row: str) -> None:
+    ledger = tmp_path / "synthetic-waves.jsonl"
+    wave = {
+        "wave_id": "synthetic-last",
+        "verdict": "FAIL",
+        "exit_code": 1,
+        "failure_reason": "review:synthetic",
+    }
+    ledger.write_text(json.dumps(wave) + "\n" + bad_row + "\n")
+    result = _run_private_reader("last-summary", ledger)
+    assert result.returncode == 0, result.stderr
+    assert "Traceback" not in result.stderr
+    assert "id=synthetic-last" in result.stdout
+    assert "verdict=FAIL" in result.stdout
+    assert "failure=review:synthetic" in result.stdout
+
+
+@pytest.mark.parametrize("bad_row", NON_OBJECT_JSON)
+def test_routing_hints_ignores_non_object_rows_without_losing_failure_trend(
+    tmp_path: Path, bad_row: str
+) -> None:
+    ledger = tmp_path / "synthetic-waves.jsonl"
+    waves = [
+        {"wave_id": f"synthetic-{index}", "verdict": "FAIL", "exit_code": 1}
+        for index in range(3)
+    ]
+    ledger.write_text(
+        "\n".join(json.dumps(row) for row in waves) + "\n" + bad_row + "\n"
+    )
+    result = _run_private_reader("routing-hints", ledger)
+    assert result.returncode == 0, result.stderr
+    assert "Traceback" not in result.stderr
+    assert "stop/review recommended" in result.stdout
+
+
+def test_all_non_object_rows_are_no_valid_wave_entries(tmp_path: Path) -> None:
+    ledger = tmp_path / "synthetic-waves.jsonl"
+    ledger.write_text("\n".join(NON_OBJECT_JSON) + "\n")
+    summary = _run_private_reader("last-summary", ledger)
+    routing = _run_private_reader("routing-hints", ledger)
+    assert summary.returncode == routing.returncode == 0
+    assert "no valid ledger entries" in summary.stdout
+    assert "no valid wave metrics" in routing.stdout
+    assert "Traceback" not in summary.stderr + routing.stderr

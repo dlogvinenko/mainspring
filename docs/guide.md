@@ -68,6 +68,64 @@ MAINSPRING_PROVIDERS_PYTHON=python3.13 make install-user-providers
 mainspring engines
 ```
 
+Both the providers extra and runtime requirements enforce `filelock>=4.2.1,<5`
+within the existing Python <3.14 scope. This can select an earlier allowed
+LiteLLM release while newer releases cap filelock below 4. Python 3.14 keeps
+the Rich-only base runtime. Isolated install/import/mock checks do not verify
+real provider credentials, inference or downloaded model assets.
+
+Optional `fnm` bootstrap applies only allowlisted assignments from a successful
+JSON helper. Helper failure discards its entire output and uses the existing
+first-directory fallback. Successful-helper string cleanup, directory checks
+and handling of the producer's exit status remain unchanged.
+
+Release formula generation preserves accepted URL/homepage values as literal
+Ruby data, including quotes, backslashes, controls and interpolation text.
+Existing stripping, validators and CLI behavior remain unchanged.
+
+## Coordinated runtime-lock updates
+
+The runtime protocol locks the persistent `${LOCK_FILE}.guard` inode. The
+`LOCK_FILE` contents are advisory PID metadata, not kernel ownership evidence.
+Release removes only its own advisory PID while still holding the guard, then
+unlocks and closes its descriptor without redirecting the caller's stderr.
+Guard existence does not mean a process is running. Never remove or replace a
+guard while an invocation or waiter may have it open.
+
+This is a coordinated version change, not a zero-downtime or mixed-version
+migration. Source edits can affect an active editable installation immediately.
+Do not update one launch route while another can still run the old protocol.
+
+1. Bound the affected domain: state paths, users/hosts sharing them, source trees,
+   editable/package overrides, wrappers and automated/interactive launch owners.
+   If that inventory cannot be bounded, defer activation.
+2. Close all identified launch intake outside both locks, including restarters
+   and pending interactive launches. The new guard does not exclude old code.
+3. Let each old invocation finish or use its owning controller's scoped stop.
+   Account for pending/preopened waiters and relevant children that can retain
+   descriptors or relaunch. Require authoritative terminal outcomes; a PID-file
+   check, process-name scan, signal acknowledgment or delay is insufficient.
+4. Obtain the launch owners' explicit quiescent-domain confirmation. An unknown
+   contender keeps intake closed; `status`, `doctor`, lock acquisition and PID
+   absence cannot establish this confirmation.
+5. With intake still closed, update all allowed routes to one reviewed build.
+   Verify resolved source/payload hashes, not just package version. Keep old
+   routes unavailable through their owners' existing controls; preserve guards.
+6. After required isolated/CI validation, reopen one controlled new launcher,
+   then the approved domain. Record its build and same-guard evidence.
+7. Rollback repeats the cutover: close intake, obtain terminal/quiescent evidence
+   for every new invocation and waiter, then switch all routes together. Never
+   hot-revert one old launcher beside a new cohort; leave guard evidence intact.
+
+The independent lock-protocol CI job runs outside `make all`, so unrelated lint
+failure cannot hide backend evidence. Linux requests and logs a real `flock`
+executable and version, then exercises the native branch; absence fails rather
+than skips. macOS exercises the actual Python `fcntl` helper. Synthetic return
+status controls are labeled as such and never substitute for native evidence.
+No cross-backend, universal process/descriptor discovery or live install safety
+claim follows from these tests. Any supported mixed-backend claim needs separate
+actual evidence. This draft does not assert a Linux CI result before it exists.
+
 ## Everyday Commands
 
 These are the commands most operators need day to day.
@@ -135,7 +193,7 @@ These commands shape the backlog before autonomous work starts.
 
 | Need | Command | What it does |
 | --- | --- | --- |
-| Initialize Method docs | `mainspring init checkout-redesign` | Create starter PRD docs under `docs/checkout-redesign/`. |
+| Initialize Method docs | `mainspring init checkout-redesign` | Create starter PRD docs under `docs/checkout-redesign/`. The normalized display name is inserted once; marker-like text and backslashes remain literal. |
 | Force Method docs overwrite | `mainspring init checkout-redesign --force` | Overwrite starter docs intentionally. |
 | Validate a PRD | `mainspring validate-prd docs/prd.md` | Validate the Product Requirements Document before decomposition. |
 | Validate a PRD as JSON | `mainspring validate-prd docs/prd.md --format json` | Emit validation details for scripts and agents. |
@@ -146,9 +204,38 @@ These commands shape the backlog before autonomous work starts.
 | Audit task shape | `mainspring scope-check` | Requires a Taskmaster backlog; checks the default backlog for Method issues. |
 | Audit task file | `mainspring scope-check path/to/tasks.json` | Check a specific Taskmaster backlog. |
 
+PRD validation checks live headings, Architecture Decision Records (ADRs), truth tables and lanes; fenced examples
+do not supply that structure. Required ADR fields need nonblank value blocks,
+including multiline prose or code. Short truth data rows without Source are
+reported. A heading-only Won't lane remains allowed. Passing is a structural
+check, not business or approval readiness.
+
+`decompose --apply` matches structured generated records by exact source,
+digest and `taskId`. Text-only legacy records require complete `GeneratedBy`,
+`Source` and `Digest` marker lines. Malformed container shapes and ambiguous
+legacy identity fail before a backup or task-file write. Valid merges keep
+existing status, dependencies, subtasks and custom data. Digest/rendering and
+edited-task behavior retain their existing rules.
+
+Taskmaster dependency collections must be JSON arrays when present and non-null.
+Malformed task or subtask collections do not establish readiness. Missing/null
+fields and empty arrays keep their no-prerequisite behavior; existing `done`
+checks and identifier matching are unchanged. Empty rollup/fallback/skip results
+remain a single newline; task-path display retains the first complete
+`.taskmaster/tasks/tasks.json` marker.
+
 When no backlog exists, Mainspring does not guess: missing backlog prints
 `mainspring init checkout-redesign` guidance so the operator can start from a
 Product Requirements Document (PRD) with a concrete copy/paste example.
+
+Saved settings retain tabs and ordinary single-line quoting; flat YAML comments
+are recognized outside quoted scalars, preserving literal hashes. New saves
+reject record separators before replacing the existing cache. Old complete
+canonical `shlex.quote` single-quoted multiline records are skipped as a unit.
+Hand-edited double-quoted multiline records remain unsupported: historical row
+parsing can still read interior setting-like lines. Explicit user choices and
+existing env/YAML validation rules retain their priority. Save staging does not
+provide crash-atomic or concurrent-writer protection.
 
 ## Advanced and Recovery Commands
 
@@ -161,6 +248,10 @@ These are useful, but they are not the default start path.
 | State repair apply | `mainspring --repair-state --force` | Apply the reviewed stale-state repair intentionally. |
 | Engine handshake | `mainspring --self-test` | Live writer/reviewer handshake; requires configured engines and may consume provider quota. |
 | Pair matrix handshake | `mainspring --self-test-all` | Live built-in pair checks; requires configured engines and may consume provider quota. |
+
+Each `replay run` child uses controls from the current source and invocation,
+including `--save-as`. Inherited replay-owned leftovers are ignored; the calling
+process and unrelated runtime environment are preserved.
 
 `mainspring hud` is the global live dashboard in an interactive terminal. Plain
 `mainspring hud` opens the Rich watch view immediately. It prints every live
@@ -240,6 +331,38 @@ automation setups can override runtime paths with `MAINSPRING_RUNTIME_DIR` or
 `MAINSPRING_STATE_DIR`.
 
 ## Writer / Reviewer Pairs
+
+Post-write scope checks use all discovered scope paths, while the progress
+display keeps its 80-path limit. Checks run before idle or CI-retry routing and
+after reviewer-feedback writer retries, including failed attempts. A violation
+blocks further review and automatic checkpoints, preserving an initial failed
+writer's exit status. Existing blacklist exemptions, task-state rules and mtime
+discovery filters remain in place. This post-write guard provides no rollback
+or read isolation.
+
+Quota snapshots keep malformed numeric or nested evidence unknown. Remaining
+percentages must be finite numbers from 0 to 100; booleans are not measurements.
+Valid legacy used percentages above 100 still yield zero remaining. Binary
+availability, status, source and reset metadata retain their existing meanings.
+
+Read boundaries retain their empty or unknown fallbacks for known filesystem,
+encoding, structured-data and system-process failures. Other exception types
+propagate instead of masquerading as missing metadata. Third-party completion
+and cost callbacks retain separate failure handling because provider exception
+classes are open-ended; a failed completion still exits nonzero.
+Wave CI-reason and docs-only matching use grep extended regular expressions in a
+per-command C locale, retaining ASCII markers beside undecodable raw log bytes.
+No ripgrep is required; category priority, retry limits and caller locale remain unchanged.
+
+The limits report retains source labels as provenance. A label such as
+`codex_sessions`, without other data, leaves a runnable adapter as
+`adapter-only`. Existing status, plan, percentage and reset signals still
+count; missing-setup and throttled-status precedence stay unchanged.
+
+The hard review gate rejects a nonzero parser exit even when it produces no
+message. JSON arrays, objects and booleans in known review text fields count as
+missing evidence. Numeric score and delta rules, JSON priority, Markdown fallback
+and duplicate-key handling are unchanged.
 
 - `claude+codex`: Claude writes, Codex reviews.
 - `codex+codex`: Codex writes, Codex reviews.
@@ -349,6 +472,12 @@ then says `Status: READY`, the writer/reviewer routing works. For multi-wave or
 team runs, start with `--topology solo` first because many local servers are
 tuned for one active request.
 
+Direct Python callers of `build_brief(prd_path, max_chars=6000)` can set a
+character limit. For a nonnegative limit below 32, an oversized summary becomes
+the fitting prefix of the existing truncation marker (empty at zero).
+Already-fitting summaries and normal/default output stay unchanged.
+The CLI still uses 6000; this adds no CLI budget flag.
+
 ## Team Safety Rules
 
 In team mode, Mainspring adds a routing label to each dispatched backlog item so
@@ -369,7 +498,14 @@ is generated by Mainspring, not typed by the operator.
   subjects count as product work.
 - Pending assigned tasks are nudged if workers do not claim them after a short delay.
 - Claimed work is requeued only with strong stale evidence: dead heartbeat, or expired lease plus stale idle status and stale heartbeat.
-- If team state cannot be read, the supervisor retries instead of treating the read failure as zero work.
+- Supervision requires usable worker evidence with nonnegative integer counts;
+  the reported worker total determines whether all workers are dead.
+- A completed backend receives no requeue, nudge or dispatch. Pending,
+  in-progress or undispatched ready work, and unreadable counts, ready items or
+  skip reasons, cause refusal with restart guidance. Successful no-more-work
+  keeps the existing solo fallback choice. Active count-read failures retain retries.
+- The selected Taskmaster tag's tasks must be an array. Other collection shapes
+  are read errors; missing tag/tasks defaults and tag priority stay unchanged.
 - If tmux cannot allocate panes for the requested worker count, the launcher automatically retries with fewer workers.
 - Team dispatch skips duplicate Taskmaster-backed subjects already present in
   the active team ledger. Worker prompts include Taskmaster id, expected file
@@ -379,6 +515,10 @@ is generated by Mainspring, not typed by the operator.
   or scopes that worker worktrees cannot see.
 - `.claude/` helper worktrees are excluded by default; configured prefixes are
   additive.
+- Parallel scope extraction recognizes supported roots at token starts:
+  `packages/web/src/index.ts` no longer advertises `src/index.ts`.
+  Existing `./` spellings, literal trailing periods and unknown-scope fallback
+  remain unchanged. This is text matching, not filesystem validation.
 
 ## Wave Ledger
 
@@ -405,11 +545,25 @@ Stable fields:
 - `blocked_reason`
 - `next_action`
 
-`--status` reads this ledger, ignores malformed lines, prints the last valid wave, and derives routing hints from recent failures.
+`--status` reads this ledger, ignores malformed and non-object JSONL rows, prints
+the last valid wave, and derives routing hints from recent failures. JSON object
+rows retain their existing verdict and routing interpretation.
+
+Metrics ignore malformed JSON and non-object JSONL rows. Included objects remain in totals when `exit_code` is missing or invalid; success requires `PASS` and an actual
+integer `0` (not Boolean, string, null or float). Time filters require usable zoned timestamps; the ledger writer emits UTC/Z and readers accept explicit offsets. Without
+a time filter, timestamp shape does not exclude rows. A date-only `--since YYYY-MM-DD` still starts the window at midnight UTC.
 
 ## Logs
 
 Logs are written under `.mainspring/logs/`.
+
+Claude stream display ignores malformed typed fields and keeps later valid events.
+Valid writer/reviewer output is mirrored to stdout and the display file. The
+formatter owns and closes its UTF-8 append display file on exit, including
+interruptions, while borrowed stdout remains open. Eager creation, flush order
+and I/O errors keep their behavior. Raw logs and text-source rules are unchanged;
+no assistant/result text fallback is added.
+Actual display/output I/O errors still fail.
 
 - `.mainspring/logs/latest.log`: most recent run log.
 - `.mainspring/logs/latest-taskmaster.log`: most recent Taskmaster run log.
@@ -419,7 +573,21 @@ Logs are written under `.mainspring/logs/`.
 ## Recovery Commands
 
 Start with read-only inspection. Do not resume saved work or launch a new wave
-until the current state is understood.
+until the current state is understood. A persistent `.guard` is not stale PID
+metadata and must not be removed/replaced by repair. Version cutover and rollback
+require [all-invocation and waiter drain](#coordinated-runtime-lock-updates), not
+only a successful `stop`, `status` or `doctor` check.
+
+Legacy skill/mode-derived state paths are checked within the selected runtime
+state directory before reading mode data or repairing it. Invalid outside
+references are refused before use, including force, dry-run, missing-target and
+nonstale cases. Explicit contained paths keep priority, and valid contained or
+nested labels keep their existing behavior. This is stored-path containment,
+with no new state schema or live-process policy.
+
+Runtime summaries shorten an absolute mode-state path only when it is inside the
+current directory. Similarly prefixed sibling paths stay absolute; relative
+paths retain their existing display. State selection and warnings are unchanged.
 
 | Need | Run | Effect |
 | --- | --- | --- |
@@ -432,6 +600,24 @@ until the current state is understood.
 | Repair preview | `mainspring --repair-state --dry-run` | Read-only stale-state repair plan. |
 | Stop this project | `mainspring stop --force` | Terminates recorded current-project Mainspring processes. |
 | Repair stale state | `mainspring --repair-state --force` | Applies only the reviewed repair preview. |
+
+Ctrl-C exits the active run with status 130; SIGTERM, including
+`mainspring stop --force`, exits with status 143. Shutdown stops only the
+active engine pipeline and its descendants, gives them a short TERM grace
+period, drops observed exited or zombie PIDs, and escalates only surviving
+processes to KILL before releasing the runtime lock. No following wave starts.
+
+`mainspring.lock` and `notifier.pid` use the same project check for recognized
+notifier commands: the command must name this project's ledger or state path.
+Relative-only notifier paths are insufficient attribution. The explicit
+`--all` override, generic launcher handling and current-process protection
+retain their existing behavior.
+
+For structured Claude logs, quota classification uses engine error evidence
+or a rate-limit event with status `rejected`. An `allowed_warning` event means
+work is still permitted. Task prose about quotas and malformed rate-limit
+metadata do not by themselves turn an unrelated process failure into quota
+exhaustion.
 
 Use `mainspring stop --help`, `mainspring --repair-state --dry-run`, and
 `mainspring last-run` before any forceful recovery. `mainspring --last-run` and
@@ -456,6 +642,11 @@ mainspring --repair-state --dry-run
 ## Telegram Notifications
 
 Mainspring can send Telegram notifications for key events during autonomous execution.
+
+The internal `detach_exec.py` launch helper reports usage status 2 for a missing
+or empty first command before session or exec operations. Valid commands retain
+their argv. Operating-system exec errors retain status 127; session-creation
+exceptions still propagate before execution. This adds no daemon-ready or recovery contract.
 
 Use this when you run several long-lived projects at once. Runtime event
 messages include `Project:`, `Folder:`, and `Tag:` so you can tell which run is
@@ -522,6 +713,28 @@ mainspring notify-test
 `notify-restart` only stops the notifier recorded in `.mainspring/state/notifier.pid`
 after validating that the process belongs to this runtime's ledger. Avoid broad
 process-name kills; they can kill another project's notifier.
+
+## Development Verification
+
+`make coverage` is the dependency-free helper-line gate with the existing 80%
+threshold. Supported first-party Python CLI interception restores the caller's
+working directory and normalizes UTF-8 text newlines; byte output stays exact.
+Non-None deadlines, explicit decoding/error options and conflicting text flags
+use genuine subprocess execution. Those child lines can remain unobserved while
+eligible source still stays in the denominator.
+
+This is a bounded tracing measure, not a full subprocess emulator or proof of
+live account/provider integration. Keep native behavior and observability
+separate when interpreting the result; passing the threshold does not erase
+unobserved source or establish native-locale/Windows parity.
+
+## Docs Site Maintenance
+
+The docs-site generator checks canonical document inputs before output writes
+or cleanup. Incremental writes reject symbolic or hard-link aliases to those
+inputs. Marked generated output can still be rebuilt, including removing output
+symlinks without changing source targets. Unmarked incremental output keeps
+unrelated custom assets.
 
 ## Known Non-Product Inputs
 

@@ -9,7 +9,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 
-from engines import litellm_adapter  # noqa: E402
+from engines import litellm_adapter
 
 
 def test_required_env_vars_for_model_known_unknown_and_default() -> None:

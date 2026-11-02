@@ -7,17 +7,16 @@ import json
 from pathlib import Path
 
 import pytest
-
 from parse_review import (
     ALL_FIELDS,
+    _cli_main,
     _extract_json_block,
     _normalize_json_keys,
     _parse_markdown_fallback,
+    fields_as_shell_vars,
     get_field,
     parse_review,
     validate_review,
-    _cli_main,
-    fields_as_shell_vars,
 )
 
 # ---------------------------------------------------------------------------

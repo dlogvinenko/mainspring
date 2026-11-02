@@ -8,7 +8,6 @@ import tomllib
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parents[2]
 README = REPO_ROOT / "README.md"
 CONTRIBUTING = REPO_ROOT / "CONTRIBUTING.md"
@@ -135,9 +134,7 @@ def test_public_markdown_prose_lines_are_reviewable() -> None:
             if (
                 len(line) <= 180
                 or "|" in line
-                or stripped.startswith("<img ")
-                or stripped.startswith("![")
-                or stripped.startswith("description:")
+                or stripped.startswith(("<img ", "![", "description:"))
             ):
                 continue
             failures.append(
@@ -932,11 +929,14 @@ def test_public_markdown_links_resolve() -> None:
                         f"{path}:{line_number}: missing link target: {raw_target}"
                     )
                     continue
-                if fragment and destination.suffix == ".md":
-                    if fragment not in anchors_by_file.get(destination, set()):
-                        problems.append(
-                            f"{path}:{line_number}: missing anchor #{fragment} in {destination}"
-                        )
+                if (
+                    fragment
+                    and destination.suffix == ".md"
+                    and fragment not in anchors_by_file.get(destination, set())
+                ):
+                    problems.append(
+                        f"{path}:{line_number}: missing anchor #{fragment} in {destination}"
+                    )
 
     assert problems == []
 

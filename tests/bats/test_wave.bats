@@ -12,13 +12,22 @@ _load_wave() {
   if [ ! -f "$WAVE_LIB" ]; then
     skip "required helper missing: $WAVE_LIB"
   fi
-  if ! command -v rg >/dev/null 2>&1; then
-    skip "rg (ripgrep) not installed"
-  fi
   source "$COMMON_LIB"
   # Stub out task_metadata_for_id so wave.sh doesn't need python/taskmaster
   task_metadata_for_id() { echo ""; }
   source "$WAVE_LIB"
+}
+
+_declared_tools_without_ripgrep() {
+  local tool_path="$BATS_TEST_TMPDIR/declared-tools"
+  local tool executable
+  mkdir -p "$tool_path"
+  for tool in awk basename cat cut date dirname find grep head mkdir mktemp rm sed seq sleep sort stat tail tr uname wc; do
+    executable="$(type -P "$tool")"
+    [ -n "$executable" ] || return 1
+    ln -s "$executable" "$tool_path/$tool" || return 1
+  done
+  printf '%s\n' "$tool_path"
 }
 
 # Scenario: mixed list of source and docs files.
@@ -238,4 +247,117 @@ TXT
   [[ "$result" == *"writer saw npm test fail"* ]]
   [[ "$result" == *"External CI log tail: $ci_log"* ]]
   [[ "$result" == *"hosted CI failure: tests/components/foo.test.ts"* ]]
+}
+
+# Scenario: a source install has ordinary POSIX tools but no optional search tool.
+# Expected: the existing category priority and docs-only matching still work.
+@test "CI and docs classifiers work with declared tools without ripgrep" {
+  local tool_path output_file category
+  tool_path="$(_declared_tools_without_ripgrep)"
+  run /usr/bin/env "PATH=$tool_path" /bin/bash --noprofile --norc -c 'command -v rg'
+  [ "$status" -eq 1 ]
+
+  output_file="$BATS_TEST_TMPDIR/classifier-output.txt"
+  for category in typecheck_fail lint_fail test_fail; do
+    case "$category" in
+      typecheck_fail) printf '%s\n' 'Tests failed' 'Lint failed' 'Typecheck failed' > "$output_file" ;;
+      lint_fail) printf '%s\n' 'Tests failed' 'Lint failed' > "$output_file" ;;
+      test_fail) printf '%s\n' 'Tests failed' > "$output_file" ;;
+    esac
+    run /usr/bin/env "PATH=$tool_path" /bin/bash --noprofile --norc -c \
+      'source "$1"; classify_ci_failure_reason "$2"' synthetic "$WAVE_LIB" "$output_file"
+    [ "$status" -eq 0 ]
+    [ "$output" = "$category" ]
+  done
+
+  printf '%s\n' 'ordinary writer output' > "$output_file"
+  run /usr/bin/env "PATH=$tool_path" /bin/bash --noprofile --norc -c \
+    'source "$1"; classify_ci_failure_reason "$2"' synthetic "$WAVE_LIB" "$output_file"
+  [ "$status" -eq 1 ]
+  [ -z "$output" ]
+
+  printf '%s\n' 'fresh-clone portability gate' > "$output_file"
+  run /usr/bin/env "PATH=$tool_path" /bin/bash --noprofile --norc -c \
+    'source "$1"; task_metadata_for_id() { cat "$1"; }; task_allows_docs_only "$2"' \
+    synthetic "$WAVE_LIB" "$output_file"
+  [ "$status" -eq 0 ]
+  printf '%s\n' 'ordinary implementation' > "$output_file"
+  run /usr/bin/env "PATH=$tool_path" /bin/bash --noprofile --norc -c \
+    'source "$1"; task_metadata_for_id() { cat "$1"; }; task_allows_docs_only "$2"' \
+    synthetic "$WAVE_LIB" "$output_file"
+  [ "$status" -eq 1 ]
+}
+
+# Scenario: a missing optional search binary previously erased a known CI reason.
+# Expected: the real loop retains failure attribution and the configured retry.
+@test "clean error and retry routes work without ripgrep" {
+  local tool_path scenario case_dir project
+  tool_path="$(_declared_tools_without_ripgrep)"
+  for scenario in clean_failed_no_retry clean_ci_retry; do
+    case_dir="$BATS_TEST_TMPDIR/$scenario-case"
+    project="$BATS_TEST_TMPDIR/$scenario-project"
+    run /usr/bin/env "PATH=$tool_path" /bin/bash --noprofile --norc \
+      "$ROOT_DIR/tests/bats/native_loop_harness.sh" "$ROOT_DIR" "$project" "$scenario" "$case_dir"
+    if [ "$scenario" = clean_failed_no_retry ]; then
+      [ "$status" -eq 1 ]
+      [ "$(wc -l < "$case_dir/writers" | tr -d ' ')" -eq 1 ]
+      [ ! -s "$case_dir/checkpoints" ]
+    else
+      [ "$status" -eq 0 ]
+      grep -q 'PASS|' "$case_dir/ledger"
+      [ "$(wc -l < "$case_dir/writers" | tr -d ' ')" -eq 2 ]
+      [ "$(wc -l < "$case_dir/checkpoints" | tr -d ' ')" -eq 1 ]
+    fi
+    grep -q 'ERROR|engine:typecheck_fail' "$case_dir/ledger"
+    ! grep -q 'scope:violation' "$case_dir/ledger"
+  done
+}
+
+# Scenario: the public launcher is used on the same declared-tool installation.
+# Expected: a dry run resolves normally without invoking a model or notifier.
+@test "public dry run supports declared tools without ripgrep" {
+  local tool_path project python
+  tool_path="$(_declared_tools_without_ripgrep)"
+  project="$BATS_TEST_TMPDIR/public-project"
+  mkdir -p "$project"
+  python="${MAINSPRING_PY:-$(type -P python3)}"
+  run /usr/bin/env "PATH=$tool_path" "MAINSPRING_PY=$python" MAINSPRING_NOTIFY_ENABLED=0 \
+    "$ROOT_DIR/mainspring.sh" --project "$project" taskmaster --dry-run --once
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Writer engine:"* ]]
+  [[ "$output" == *"Reviewer engine:"* ]]
+  [[ "$output" != *"command not found"* ]]
+}
+
+# Scenario: raw compiler output can mix an ASCII marker with undecodable bytes.
+# Expected: caller locale never erases the known category or docs-only marker.
+@test "wave matching retains markers beside invalid UTF-8 bytes" {
+  local tool_path utf8_locale locale_name output_file placement
+  tool_path="$(_declared_tools_without_ripgrep)"
+  utf8_locale=""
+  while IFS= read -r locale_name; do
+    case "$locale_name" in
+      *UTF-8|*utf8|*utf-8) utf8_locale="$locale_name"; break ;;
+    esac
+  done < <(locale -a)
+  [ -n "$utf8_locale" ]
+
+  output_file="$BATS_TEST_TMPDIR/raw-output.txt"
+  for placement in prefix suffix; do
+    if [ "$placement" = prefix ]; then
+      printf '\377Typecheck failed\n' > "$output_file"
+    else
+      printf 'Typecheck failed\377\n' > "$output_file"
+    fi
+    run /usr/bin/env "PATH=$tool_path" "LC_ALL=$utf8_locale" /bin/bash --noprofile --norc -c \
+      'source "$1"; classify_ci_failure_reason "$2"' synthetic "$WAVE_LIB" "$output_file"
+    [ "$status" -eq 0 ]
+    [ "$output" = typecheck_fail ]
+  done
+
+  printf '\377documentation\n' > "$output_file"
+  run /usr/bin/env "PATH=$tool_path" "LC_ALL=$utf8_locale" /bin/bash --noprofile --norc -c \
+    'source "$1"; task_metadata_for_id() { cat "$1"; }; task_allows_docs_only "$2"' \
+    synthetic "$WAVE_LIB" "$output_file"
+  [ "$status" -eq 0 ]
 }

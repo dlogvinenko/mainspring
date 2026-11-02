@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
 """Team dispatch operations for Mainspring.
 
@@ -20,22 +19,22 @@ Usage:
 
 from __future__ import annotations
 
-from cli_runtime import run_cli
-
 import json
 import os
 import re
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
+
+from cli_runtime import run_cli
 
 
 def _parse_time(value: str | None) -> datetime | None:
     if not value:
         return None
     try:
-        return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        return datetime.fromisoformat(str(value).replace("Z", "+00:00"))  # noqa: FURB162 - preserve rejection of malformed Z separators
     except ValueError:
         return None
 
@@ -156,7 +155,7 @@ def _record_dispatch(
         "subject": subject,
         "team_task_id": team_task_id,
         "owner": owner,
-        "ts": datetime.now(timezone.utc).isoformat(),
+        "ts": datetime.now(UTC).isoformat(),
     }
     _write_dispatch_ledger(team_name, ledger)
     return ledger[tm_id]
@@ -170,7 +169,7 @@ def _refresh_dispatch_ledger_from_team_tasks(
     if not payload:
         return ledger
 
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     changed = False
     for task in _tm_tasks(payload):
         subject = str(task.get("subject") or "")
@@ -330,7 +329,7 @@ def cmd_dispatch(
                 or created_obj.get("data", {}).get("id")
                 or ""
             )
-        except Exception:
+        except (ValueError, TypeError, AttributeError, RecursionError):
             task_id = ""
         if tm_id:
             ledger[tm_id] = _record_dispatch(
@@ -455,7 +454,7 @@ def cmd_nudge(team_name: str, min_age_seconds: int = 60) -> None:
     if not payload:
         return
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     all_tasks = payload.get("data", {}).get("tasks", []) or []
 
     for task in all_tasks:
@@ -481,7 +480,7 @@ def cmd_nudge(team_name: str, min_age_seconds: int = 60) -> None:
         try:
             with open(status_path, encoding="utf-8") as fh:
                 worker_status = json.load(fh)
-        except Exception:
+        except (OSError, UnicodeError, ValueError, TypeError, RecursionError):
             worker_status = {}
         if worker_status.get("state") not in (None, "idle", "blocked"):
             continue
@@ -540,7 +539,7 @@ def cmd_requeue(team_name: str, stale_minutes: int = 10) -> None:
     if not payload:
         return
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     for task in payload.get("data", {}).get("tasks", []) or []:
         subject = str(task.get("subject") or "")
         if (
@@ -575,12 +574,12 @@ def cmd_requeue(team_name: str, stale_minutes: int = 10) -> None:
         try:
             with open(status_path, encoding="utf-8") as fh:
                 worker_status = json.load(fh)
-        except Exception:
+        except (OSError, UnicodeError, ValueError, TypeError, RecursionError):
             pass
         try:
             with open(heartbeat_path, encoding="utf-8") as fh:
                 heartbeat = json.load(fh)
-        except Exception:
+        except (OSError, UnicodeError, ValueError, TypeError, RecursionError):
             pass
 
         lease_until = _parse_time(claim.get("leased_until"))

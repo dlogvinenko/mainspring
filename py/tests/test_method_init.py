@@ -14,7 +14,7 @@ import pytest
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 
-import method_init  # noqa: E402
+import method_init
 
 SCRIPT = str(HERE.parent / "method_init.py")
 
@@ -236,6 +236,7 @@ def test_cli_help() -> None:
         [sys.executable, SCRIPT, "--help"],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 0
     assert "Usage" in result.stdout
@@ -252,6 +253,7 @@ def test_cli_init_existing_taskmaster(tmp_path: Path) -> None:
         [sys.executable, SCRIPT, "demo feature", "--root", str(tmp_path)],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -275,6 +277,7 @@ def test_cli_usage_errors(args: list[str], message: str) -> None:
         [sys.executable, SCRIPT, *args],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 2

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
 """Read-only Mainspring HUD snapshot.
 
@@ -15,8 +14,6 @@ Usage:
 
 from __future__ import annotations
 
-from cli_runtime import run_cli
-
 import json
 import os
 import re
@@ -25,11 +22,12 @@ import shutil
 import subprocess
 import sys
 import time
-from datetime import datetime, timedelta, timezone, tzinfo
+from datetime import UTC, datetime, timedelta, tzinfo
 from pathlib import Path
 
 import metrics
 import notify_telegram
+from cli_runtime import run_cli
 
 
 def _parse_timestamp(entry: dict, target_tz: tzinfo | None = None) -> datetime | None:
@@ -37,7 +35,7 @@ def _parse_timestamp(entry: dict, target_tz: tzinfo | None = None) -> datetime |
     if not value:
         return None
     try:
-        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))  # noqa: FURB162 - preserve rejection of malformed Z separators
     except ValueError:
         return None
     return parsed.astimezone(target_tz)
@@ -64,7 +62,7 @@ def _parse_since(value: str, now: datetime) -> datetime | None:
             return now - timedelta(hours=count)
         return now - timedelta(days=count)
     try:
-        return datetime.fromisoformat(text.replace("Z", "+00:00")).astimezone(
+        return datetime.fromisoformat(text.replace("Z", "+00:00")).astimezone(  # noqa: FURB162 - preserve rejection of malformed Z separators
             now.tzinfo
         )
     except ValueError as exc:
@@ -120,7 +118,7 @@ def _entry_summary(entry: dict, target_tz: tzinfo | None = None) -> dict:
 def _entry_sort_key(entry: dict) -> tuple[datetime, str]:
     timestamp = _parse_timestamp(entry)
     if timestamp is None:
-        timestamp = datetime.min.replace(tzinfo=timezone.utc)
+        timestamp = datetime.min.replace(tzinfo=UTC)
     return timestamp, str(entry.get("wave_id") or "")
 
 
@@ -542,7 +540,7 @@ def _pid_command(pid: int | None) -> str:
             stderr=subprocess.DEVNULL,
             timeout=1.0,
         ).strip()
-    except Exception:
+    except (OSError, subprocess.SubprocessError, UnicodeError):
         return ""
 
 
@@ -920,7 +918,7 @@ def _read_process_rows() -> list[str]:
             text=True,
             stderr=subprocess.DEVNULL,
         )
-    except Exception:
+    except (OSError, subprocess.SubprocessError, UnicodeError):
         return []
     return output.splitlines()
 
@@ -943,7 +941,7 @@ def _pid_cwd(pid: int) -> Path | None:
             stderr=subprocess.DEVNULL,
             timeout=1.0,
         )
-    except Exception:
+    except (OSError, subprocess.SubprocessError, UnicodeError):
         return None
     for line in output.splitlines():
         if line.startswith("n"):
@@ -1230,7 +1228,7 @@ def _snapshot_activity_time(snapshot: dict) -> datetime:
     try:
         return datetime.fromtimestamp(ledger.stat().st_mtime).astimezone()
     except OSError:
-        return datetime.min.replace(tzinfo=timezone.utc).astimezone()
+        return datetime.min.replace(tzinfo=UTC).astimezone()
 
 
 def _consecutive_failure_count(recent_waves: list[dict], current: dict) -> int:
@@ -1527,7 +1525,7 @@ def _human_time(value: object) -> str:
     if not text:
         return "-"
     try:
-        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))  # noqa: FURB162 - preserve rejection of malformed Z separators
     except ValueError:
         return text
     if parsed.tzinfo is None:
@@ -1747,8 +1745,8 @@ def format_global_text(snapshot: dict, *, width: int | None = None) -> str:
 def format_rich(snapshot: dict):
     """Return a Rich renderable for the live HUD."""
     try:
-        from rich.console import Group
         from rich import box
+        from rich.console import Group
         from rich.panel import Panel
         from rich.table import Table
         from rich.text import Text
@@ -2318,17 +2316,7 @@ def _cli_main(argv: list[str] | None = None) -> int:
         return 2
     stdout_is_tty = bool(getattr(sys.stdout, "isatty", lambda: False)())
     if (
-        auto_live
-        and not once
-        and not watch
-        and not rich_mode
-        and not output_json
-        and stdout_is_tty
-    ):
-        watch = True
-        rich_mode = _rich_available()
-    elif (
-        no_args
+        (auto_live or no_args)
         and not once
         and not watch
         and not rich_mode

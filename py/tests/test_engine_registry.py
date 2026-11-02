@@ -15,7 +15,7 @@ import pytest
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 
-from engines import claude, codex, registry  # noqa: E402
+from engines import claude, codex, registry
 
 SCRIPT = str(HERE.parent / "engine_registry.py")
 LEGACY_ENV_PREFIX = "OMX" + "_LOOP_"
@@ -198,6 +198,7 @@ def test_cli_json_outputs_registered_engines() -> None:
         capture_output=True,
         text=True,
         env=env,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -224,6 +225,7 @@ def test_cli_text_names_execution_status() -> None:
         [sys.executable, SCRIPT],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -826,8 +828,7 @@ def test_readiness_errors_reports_missing_binary(
     errors = registry.readiness_errors("missing-binary", require_executable=True)
 
     assert errors == [
-        "missing-binary not found in PATH for engine missing-binary; "
-        "install missing-binary and ensure it is on PATH"
+        "missing-binary not found in PATH for engine missing-binary; install missing-binary and ensure it is on PATH"
     ]
 
 
@@ -850,6 +851,7 @@ def test_cli_command_json_outputs_adapter_command() -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -879,6 +881,7 @@ def test_cli_command_nul_preserves_multiline_prompt(tmp_path: Path) -> None:
             "nul",
         ],
         capture_output=True,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -944,6 +947,7 @@ def test_cli_validate_accepts_provider_execution_status() -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -954,6 +958,7 @@ def test_cli_default_model() -> None:
         [sys.executable, SCRIPT, "default-model", "gemini"],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -1030,6 +1035,7 @@ def test_cli_failure_reason_from_tail_file(tmp_path: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -1102,6 +1108,7 @@ def test_cli_failure_rejects_bad_exit_code() -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 2

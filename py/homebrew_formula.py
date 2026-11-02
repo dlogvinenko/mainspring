@@ -1,16 +1,15 @@
-#!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
 """Generate Homebrew tap formula metadata for Mainspring releases."""
 
 from __future__ import annotations
 
-from cli_runtime import run_cli
-
 import argparse
+import json
 import re
 import tomllib
 from pathlib import Path
 
+from cli_runtime import run_cli
 
 FORMULA_DESC = "PRD-first AI coding agent orchestration"
 HOMEBREW_DESC_MAX_LENGTH = 80
@@ -31,7 +30,7 @@ def normalize_version(version: str) -> str:
         raise FormulaInputError(
             "version must look like a SemVer release, for example v1.0.0"
         )
-    return cleaned[1:] if cleaned.startswith("v") else cleaned
+    return cleaned.removeprefix("v")
 
 
 def validate_url(url: str) -> str:
@@ -105,6 +104,12 @@ def validate_python_dependency(dependency: str) -> str:
     return cleaned
 
 
+def _ruby_string_literal(value: str) -> str:
+    """Preserve escapes and interpolation starters as Ruby string data."""
+    escaped = json.dumps(value, ensure_ascii=False)
+    return re.sub(r"#(?=[{@$])", r"\\#", escaped)
+
+
 def build_formula(
     *,
     version: str,
@@ -128,8 +133,8 @@ class Mainspring < Formula
   include Language::Python::Virtualenv
 
   desc "{formula_desc}"
-  homepage "{formula_homepage}"
-  url "{formula_url}"
+  homepage {_ruby_string_literal(formula_homepage)}
+  url {_ruby_string_literal(formula_url)}
   sha256 "{formula_sha256}"
   license "Apache-2.0"
   version "{formula_version}"

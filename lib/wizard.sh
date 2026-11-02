@@ -83,15 +83,17 @@ prompt_choice() {
     echo "Enter a number between 1 and ${#options[@]}." >&2
   done
 }
-
 _load_config_file() {
   local source_file="$1"
-  local loaded
+  local loaded record key value
   if ! loaded="$("$(mainspring_python)" "$MAINSPRING_PY_DIR/last_run.py" load "$source_file" 2>&1)"; then
     echo "$loaded" >&2
     exit 1
   fi
-  while IFS=$'\t' read -r key value; do
+  while IFS= read -r record; do
+    case "$record" in *$'\t'*) ;; *) continue ;; esac
+    key="${record%%$'\t'*}"
+    value="${record#*$'\t'}"
     case "$key" in
       MODE)
         [ "${USER_SET_MODE:-false}" = true ] || MODE="$value"
@@ -213,8 +215,9 @@ offer_last_run_resume() {
   echo ""
   return 1
 }
-
 save_last_run_settings() {
+  local saved
+  saved="$(
   MODE="$MODE" \
   PAIR_MODE="$PAIR_MODE" \
   ENGINE="$ENGINE" \
@@ -231,9 +234,10 @@ save_last_run_settings() {
   RUN_ONCE="$RUN_ONCE" \
   PRD_PATH="$PRD_PATH" \
   AUTO_CHECKPOINT="$AUTO_CHECKPOINT" \
-    "$(mainspring_python)" "$MAINSPRING_PY_DIR/last_run.py" save > "$LAST_RUN_FILE"
+    "$(mainspring_python)" "$MAINSPRING_PY_DIR/last_run.py" save
+  )" || return $?
+  printf '%s\n' "$saved" > "$LAST_RUN_FILE"
 }
-
 apply_default_models_for_current_pair() {
   if [ -z "$MODEL_OVERRIDE" ]; then
     MODEL_OVERRIDE="$(engine_default_model "$ENGINE")"

@@ -5,7 +5,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parents[2]
 CHANGELOG = REPO_ROOT / "CHANGELOG.md"
 PRD = REPO_ROOT / "docs" / "prd.md"

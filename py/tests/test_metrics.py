@@ -6,13 +6,15 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
+
+import pytest
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 
-import metrics  # noqa: E402
+import metrics
 
 
 def _make_entry(
@@ -34,7 +36,7 @@ def _make_entry(
     models: dict[str, str] | None = None,
 ) -> dict:
     if ts is None:
-        ts = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        ts = datetime.now(UTC).isoformat().replace("+00:00", "Z")
     entry: dict = {
         "timestamp": ts,
         "wave_id": wave_id,
@@ -62,6 +64,184 @@ def _write_ledger(path: Path, entries: list[dict]) -> None:
         "\n".join(json.dumps(e) for e in entries) + "\n",
         encoding="utf-8",
     )
+
+
+def test_metrics_ignore_non_object_json_rows(tmp_path: Path) -> None:
+    entries = [
+        _make_entry(wave_id="valid-pass"),
+        _make_entry(wave_id="valid-fail", writer="ollama", verdict="FAIL", exit_code=1),
+    ]
+    ledger = tmp_path / "synthetic.jsonl"
+    ledger.write_text(
+        "\n".join(
+            [
+                json.dumps(entries[0]),
+                "null",
+                "[]",
+                '[{"verdict": "PASS"}]',
+                "42",
+                "true",
+                '"non-wave text"',
+                "malformed JSON",
+                json.dumps(entries[1]),
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    assert metrics.read_ledger(ledger) == entries
+    for extra in ([], ["--routing"]):
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(HERE.parent / "metrics.py"),
+                str(ledger),
+                "--format",
+                "json",
+                *extra,
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        assert result.returncode == 0, result.stderr
+        payload = json.loads(result.stdout)
+        if extra:
+            assert payload["pass_rate_by_pair"]["claude+codex"]["pass"] == 1
+            assert payload["pass_rate_by_pair"]["ollama+codex"]["pass"] == 0
+        else:
+            assert payload["total_waves"] == 2
+            assert payload["success_rate"] == 50.0
+
+
+def test_metrics_missing_exit_code_does_not_count_as_success(tmp_path: Path) -> None:
+    partial = _make_entry(wave_id="missing-exit")
+    del partial["exit_code"]
+    entries = [_make_entry(wave_id="observed-success"), partial]
+    summary = metrics.compute_metrics(entries)
+    routing = metrics.compute_routing_metrics(entries)
+
+    assert summary["total_waves"] == 2
+    assert summary["success_rate"] == 50.0
+    assert summary["pass_rate_per_pair"]["claude+codex"] == 50.0
+    assert routing["pass_rate_by_pair"]["claude+codex"]["pass"] == 1
+    assert routing["pass_rate_by_topology"]["solo"]["pass_rate"] == 50.0
+
+    ledger = tmp_path / "synthetic-partial.jsonl"
+    _write_ledger(ledger, entries)
+    for extra in ([], ["--routing"]):
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(HERE.parent / "metrics.py"),
+                str(ledger),
+                "--format",
+                "json",
+                *extra,
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        assert result.returncode == 0, result.stderr
+        payload = json.loads(result.stdout)
+        if extra:
+            assert payload["pass_rate_by_pair"]["claude+codex"]["pass_rate"] == 50.0
+        else:
+            assert payload["success_rate"] == 50.0
+
+
+@pytest.mark.parametrize(
+    ("exit_status", "successful"),
+    [
+        (0, True),
+        (1, False),
+        (-1, False),
+        (False, False),
+        (True, False),
+        (None, False),
+        ("0", False),
+        ("1", False),
+        (0.0, False),
+        (-0.0, False),
+        (1.0, False),
+        (-1.0, False),
+        (0.5, False),
+    ],
+)
+def test_metrics_success_requires_integer_exit_status(
+    exit_status: object, successful: bool
+) -> None:
+    typed = _make_entry(wave_id="typed-status")
+    typed["exit_code"] = exit_status
+    entries = [_make_entry(wave_id="known-success"), typed]
+    expected_passes = 2 if successful else 1
+    expected_rate = 100.0 if successful else 50.0
+
+    summary = metrics.compute_metrics(entries)
+    routing = metrics.compute_routing_metrics(entries)
+
+    assert summary["total_waves"] == 2
+    assert summary["success_rate"] == expected_rate
+    assert summary["pass_rate_per_pair"]["claude+codex"] == expected_rate
+    assert routing["pass_rate_by_pair"]["claude+codex"]["total"] == 2
+    assert routing["pass_rate_by_pair"]["claude+codex"]["pass"] == expected_passes
+    assert routing["pass_rate_by_topology"]["solo"]["pass_rate"] == expected_rate
+
+
+def test_metrics_time_filter_skips_unzoned_row_timestamps(tmp_path: Path) -> None:
+    now = datetime.now(UTC)
+    zoned = _make_entry(wave_id="utc-z", ts=now.isoformat().replace("+00:00", "Z"))
+    offset = _make_entry(
+        wave_id="explicit-offset",
+        ts=now.astimezone(timezone(timedelta(hours=2))).isoformat(),
+        verdict="FAIL",
+        exit_code=1,
+        duration=120,
+    )
+    entries = [
+        zoned,
+        _make_entry(wave_id="naive", ts=now.replace(tzinfo=None).isoformat()),
+        _make_entry(wave_id="date-only", ts=now.date().isoformat()),
+        _make_entry(wave_id="invalid", ts="not-a-date"),
+        offset,
+    ]
+
+    assert metrics.filter_entries(entries, days=7) == [zoned, offset]
+    assert metrics.filter_entries(entries, since=now.date().isoformat()) == [
+        zoned,
+        offset,
+    ]
+    assert metrics.filter_entries(entries) == entries
+
+    ledger = tmp_path / "synthetic-timezones.jsonl"
+    _write_ledger(ledger, entries)
+    for extra in ([], ["--routing"]):
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(HERE.parent / "metrics.py"),
+                str(ledger),
+                "--format",
+                "json",
+                *extra,
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        assert result.returncode == 0, result.stderr
+        payload = json.loads(result.stdout)
+        if extra:
+            assert payload["pass_rate_by_pair"]["claude+codex"]["total"] == 2
+            assert payload["mean_duration_by_task_class"]["unknown"] == 90.0
+        else:
+            assert payload["total_waves"] == 2
+            assert payload["mean_duration_s"] == 90.0
 
 
 # ── compute_metrics ────────────────────────────────────────────────────
@@ -92,7 +272,7 @@ def test_compute_metrics_all_pass() -> None:
 # Scenario: Ledger rows use PRD canonical fields instead of legacy aliases.
 # Expected: Metrics still compute pair, timestamp, duration, and model truth.
 def test_canonical_ledger_fields() -> None:
-    now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    now = datetime.now(UTC).isoformat().replace("+00:00", "Z")
     entries = [
         {
             "ts": now,
@@ -205,7 +385,7 @@ def test_compute_metrics_pass_rate_per_pair() -> None:
 # Scenario: Filter by days.
 # Expected: only recent entries returned.
 def test_filter_by_days() -> None:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     old_ts = (now - timedelta(days=30)).isoformat().replace("+00:00", "Z")
     new_ts = (now - timedelta(hours=1)).isoformat().replace("+00:00", "Z")
     entries = [
@@ -541,7 +721,7 @@ def test_disabled_pair_state_accepts_legacy_shapes_and_manual_disabled(
         state_file,
         value_metrics,
         recommendation,
-        now=datetime(2026, 5, 4, tzinfo=timezone.utc),
+        now=datetime(2026, 5, 4, tzinfo=UTC),
     )
 
     assert state["disabled_pairs"] == [
@@ -614,6 +794,7 @@ def test_cli_update_disabled_pairs_writes_state(tmp_path: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -628,6 +809,7 @@ def test_cli_update_disabled_pairs_writes_state(tmp_path: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert listed.stdout.strip() == "claude-haiku+claude-haiku"
 
@@ -715,6 +897,7 @@ def test_cli_json_output(tmp_path: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 0
     data = json.loads(result.stdout)
@@ -737,6 +920,7 @@ def test_cli_routing_json_output(tmp_path: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 0
     data = json.loads(result.stdout)
@@ -745,7 +929,7 @@ def test_cli_routing_json_output(tmp_path: Path) -> None:
 
 def test_cli_routing_defaults_to_fourteen_day_window(tmp_path: Path) -> None:
     ledger = tmp_path / "waves.jsonl"
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     _write_ledger(
         ledger,
         [
@@ -773,6 +957,7 @@ def test_cli_routing_defaults_to_fourteen_day_window(tmp_path: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -789,6 +974,7 @@ def test_cli_no_args() -> None:
         [sys.executable, str(HERE.parent / "metrics.py")],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 2
 
@@ -802,6 +988,7 @@ def test_cli_empty_ledger(tmp_path: Path) -> None:
         [sys.executable, str(HERE.parent / "metrics.py"), str(ledger), "--days", "7"],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 0
     assert "Total waves:    0" in result.stdout
@@ -814,6 +1001,7 @@ def test_cli_disabled_pairs_requires_state_path() -> None:
         [sys.executable, str(HERE.parent / "metrics.py"), "disabled-pairs"],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 2
@@ -828,6 +1016,7 @@ def test_cli_rejects_unknown_flag(tmp_path: Path) -> None:
         [sys.executable, str(HERE.parent / "metrics.py"), str(ledger), "--unknown"],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 2
@@ -869,6 +1058,7 @@ def test_cli_routing_update_uses_default_state_dir(tmp_path: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 0

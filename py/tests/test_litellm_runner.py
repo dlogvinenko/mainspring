@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
 """Tests for litellm_runner.py."""
 
@@ -7,11 +6,10 @@ from __future__ import annotations
 import builtins
 import json
 import os
+import sys
 from io import StringIO
 from pathlib import Path
 from types import SimpleNamespace
-
-import sys
 
 import pytest
 

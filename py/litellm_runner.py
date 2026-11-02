@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
 """Tiny LiteLLM completion runner for Mainspring engine dispatch.
 
@@ -9,8 +8,6 @@ capture stdout exactly like the CLI-backed engines.
 
 from __future__ import annotations
 
-from cli_runtime import run_cli
-
 import argparse
 import json
 import os
@@ -20,6 +17,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, TextIO
 
+from cli_runtime import run_cli
 from engines.litellm_adapter import (
     format_missing_env_vars_message,
     missing_env_vars_for_model,
@@ -149,7 +147,8 @@ def extract_response_cost(
         return None
     try:
         return _as_float(cost_func(response))
-    except Exception:
+    # Provider and cost callbacks can raise vendor-specific exception classes.
+    except Exception:  # noqa: BLE001
         return None
 
 
@@ -287,7 +286,8 @@ def main(
     except ResponseShapeError as exc:
         print(f"mainspring: litellm response shape invalid: {exc}", file=stderr)
         return 1
-    except Exception as exc:
+    # Provider and cost callbacks can raise vendor-specific exception classes.
+    except Exception as exc:  # noqa: BLE001
         print(f"mainspring: litellm completion failed: {exc}", file=stderr)
         return 1
 

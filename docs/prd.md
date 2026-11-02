@@ -70,29 +70,63 @@ The ten commandments. Anything below this line bows to them. If a phase plan, a 
 
 ## Current truth snapshot (verified)
 
-Captured 2026-06-15 after HUD empty-state and active-card polish, packaged
-runtime Python isolation for global HUD use, command-help hardening, public
-release-surface copy cleanup, installed-wheel CLI contract guards, and a fresh
-release gate against the standalone repository layout.
+### Local candidate validation, 2026-11-02
+
+The complete local `make all`, package-smoke and coverage sequence passed before
+the portable wave-matching follow-up: normal and traced Python each passed 2101
+tests with 1 skipped, and all 234 Bats passed. Ruff check/format, shell lint, HUD,
+docs-site, dependency audit and wheel/sdist smoke passed. Measured helper coverage
+was 92.9% (11450/12326 executable lines), above the unchanged 80% threshold.
+
+After the matching repair, a separate full shell-lint/Bats gate passes all 238
+cases. CI-reason and docs-only matching use byte-stable grep rather than an undeclared
+ripgrep dependency. Owned tool-only controls retain attribution, retries and public
+dry-run behavior without a model or notifier call. Python runtime is unchanged;
+hosted CI is checked separately at each published revision. Live provider/account
+access and global installation are outside these local checks.
+
+### Historical validation, 2026-10-30
+
+The dated gate/publication observations below retain the earlier validation
+against public base `4d365cc`; they do not describe current candidate readiness.
+Structural file and function counts reflect the current tree. Global installation
+and hosted publication observations retain their own historical dates.
 
 | Metric                                  | Value                                              | Source                                                   |
 | --------------------------------------- | -------------------------------------------------- | -------------------------------------------------------- |
-| `mainspring.sh` LOC                     | 391                                                | `wc -l mainspring.sh` on 2026-06-16                      |
-| Bash functions across entrypoint + lib  | 171                                                | `rg` function-pattern scan on `mainspring.sh lib/*.sh` on 2026-06-16 |
+| `mainspring.sh` LOC                     | 451                                                | `wc -l mainspring.sh` on 2026-10-31                      |
+| Bash functions across entrypoint + lib  | 173                                                | function-pattern scan on current `mainspring.sh lib/*.sh` |
 | Source shell syntax                     | passes                                             | `bash -n mainspring.sh lib/*.sh`                         |
 | Source shell lint                       | passes                                             | `shellcheck -S warning mainspring.sh lib/*.sh`           |
-| Python lint                             | passes                                             | `ruff check py`                                          |
-| Python format                           | passes, 91 files already formatted                 | `ruff format --check py`                                 |
+| Python lint                             | 410 baseline findings, zero additions                | Ruff 0.17.3 comparison with public `4d365cc` on 2026-10-30 |
+| Python format                           | passes, 119 files already formatted                 | `ruff format --check py`                                 |
 | Active embedded Python in shell paths   | 0 heredoc / inline-parser hits                     | `rg` scan for `python3 - <<` and `python3 -c` in shell    |
-| Pytest suite files                      | 42                                                 | `find py/tests -name 'test_*.py'` plus count             |
-| Bats suite files                        | 12                                                 | `find tests/bats -name '*.bats'` plus count              |
+| Pytest suite files                      | 68                                                 | `find py/tests -name 'test_*.py'` plus count             |
+| Bats suite files                        | 14                                                 | `find tests/bats -name '*.bats'` plus count              |
 | Python line coverage                    | 90.6% (coverage gate pass)                         | `make coverage` on 2026-06-16                           |
-| Full local gate                         | passes: 1124 Python tests passed, 1 skipped; 223 Bats; HUD/docs-site smoke; dependency audit; package smoke; PRD validation | `make release-check` on 2026-06-16 |
+| Full local gate                         | blocked: 1149 Python tests passed, 1 skipped; 223 Bats passed (doctor fixtures isolate inherited interpreter overrides); HUD/docs-site and package smoke pass; 410 baseline Ruff findings; known filelock findings resolved in the validated public dependency graphs | separate local gates on 2026-10-30; `make all` stops at baseline lint |
+| Provider dependency floor               | filelock >=4.2.1,<5 on Python <3.14; actual 3.11 requirements and 3.13 providers-extra installs/mock checks pass; public graphs have 0 known findings; 3.14 remains Rich-only | isolated validation on 2026-10-30; local unpublished source and real providers are outside registry/mock proof |
 | Global editable CLI                     | passes: `make install-user`; `command -v mainspring` resolves `~/.local/bin/mainspring`; installed HUD captured output exits one-shot; unsupported release-management probes fail with `Unknown command` | local pipx smoke on 2026-06-15 |
 | Taskmaster runtime state                | not tracked in source release                      | `py/tests/test_no_hardcoded_paths.py`                    |
 | Public release checklist                | clean `main` is public; hosted CI and GitHub Pages are green; remaining external action is signing `v1.0.0` and publishing the GitHub Release | GitHub repository state, hosted Actions runs, Pages deployment, signing key |
 | PRD readiness score                     | 900 / 1000                                        | source-install product path is green; remaining points are publication checklist items |
 | Telegram notifier health in clean env   | disabled until `MAINSPRING_NOTIFY_ENABLED=1`       | `./mainspring.sh notify-health --format json`            |
+
+Signal shutdown ends the run with exit status 130 for SIGINT or 143 for
+SIGTERM. It terminates only the active engine pipeline and its descendants,
+with bounded TERM/KILL cleanup before releasing the runtime lock, and starts
+no further wave. Regressions cover both Codex and Claude pipelines, including an engine
+and subprocess that ignore TERM, without making model calls.
+
+Structured Claude failure classification accepts engine error evidence and
+`rejected` rate-limit events. An `allowed_warning` event is not exhaustion;
+task prose mentioning quota and malformed rate-limit metadata do not cause a
+quota classification or crash the failure-reporting path.
+
+External-data fallbacks catch known filesystem, encoding, parsing and process-tool
+failures rather than every helper exception. Provider callbacks and traced child
+scripts retain explicit failure boundaries. Invalid timestamp separators and
+ambiguous duplicate task ordering retain their existing rejection behavior.
 
 **Resolved historical critical bug:** the former SC2259 path
 `"${cmd[@]}" | tee "$raw_file" | python3 - <<'PY' ... PY` let the heredoc
@@ -312,37 +346,34 @@ the default model/readiness contract, and covering it with registry tests.
 Provider engines must never silently fall back to another provider, model, or
 reviewer.
 
-#### `acquire_lock` / `release_lock` — flock on fd 9
+#### `acquire_lock` / `release_lock`: persistent guard protocol
 
-```bash
-# lib/lock.sh
-acquire_lock() {
-  mkdir -p "$(dirname "$LOCK_FILE")"
-  exec 9>"$LOCK_FILE"
-  if ! flock -n 9; then
-    local existing_pid
-    existing_pid="$(cat "$LOCK_FILE" 2>/dev/null || true)"
-    echo "Mainspring already running (pid ${existing_pid:-unknown}); stop it or wait." >&2
-    exit 1
-  fi
-  echo "$$" >&9
-}
-release_lock() {
-  exec 9>&- 2>/dev/null || true
-  if [ -f "$LOCK_FILE" ] && [ "$(cat "$LOCK_FILE" 2>/dev/null || true)" = "$$" ]; then
-    rm -f "$LOCK_FILE"
-  fi
-}
-```
+The canonical implementation is [lib/lock.sh](../lib/lock.sh), with the existing Python `fcntl` fallback in
+[py/fd_lock.py](../py/fd_lock.py). It opens descriptor 9 on `${LOCK_FILE}.guard`, takes the nonblocking backend lock,
+then writes advisory PID metadata to `LOCK_FILE`. Release removes only its own PID while the guard is still held,
+unlocks and brace-scopes the descriptor-close stderr redirection. Later caller and EXIT-trap diagnostics remain visible.
 
-The kernel auto-releases fd 9 on any exit (including SIGKILL), so the script can never leave a stale lock. The PID file content is purely advisory for human inspection.
+The guard inode persists across releases and must never be unlinked or replaced while any owner
+or waiter may have it open. OS descriptor lifetime, including relevant children, controls lock
+lifetime; the PID text and guard existence do not certify ownership or operational quiescence.
+
+Adoption and rollback require the [coordinated cutover](guide.md#coordinated-runtime-lock-updates): close intake, account
+for all old invocations and pending/preopened contenders, obtain owner-confirmed quiescence, then switch every allowed route
+to one build. Concurrent old/new protocols are unsupported. Rollback drains the new cohort and its waiters before restoring
+old routes; it is never a one-launcher hot revert. No automatic PID scanner, stop/drain or migration framework is implied.
+
+Repository-relative owned-TMP tests preserve original canonical controls and port the deterministic
+lifecycle, stderr, stable-guard and unsupported-mixed oracles. The independent CI job requires
+actual Linux `flock` evidence and keeps macOS `fcntl` controls. Stubbed status mappings and missing
+local native binaries are not Linux correctness evidence; no Linux result is asserted before a real
+source-bound run. These private/CI checks do not establish a user runtime drain.
 
 #### `check_write_scope` — post-wave path guard
 
 ```bash
 # lib/write_scope.sh
 # Reads newline-separated changed file paths on stdin.
-# Returns 0 if all paths are inside the allowed product scope.
+# Returns 0 if no supplied path matches the post-write blacklist.
 # Returns 1 and prints offenders on stderr otherwise.
 check_write_scope() {
   local offenders=()
@@ -352,13 +383,13 @@ check_write_scope() {
     case "$path" in
       .env|.env.*|.secret|.secret.*|*/.env|*/.env.*|*/.secret|*/.secret.*)
         offenders+=("$path"); continue ;;
-      node_modules/*|*/node_modules/*) offenders+=("$path"); continue ;;
-      .git/*|*/.git/*)                  offenders+=("$path"); continue ;;
-      dist/*|coverage/*|playwright-report/*|test-results/*)
-        offenders+=("$path"); continue ;;
-      src/*|apps/*|tests/*|e2e/*|docs/*|.taskmaster/*|scripts/*|shared/*|server/*|public/*|plugins/*)
-        continue ;;
-      *) continue ;;  # top-level dotfile-clean path tolerated
+      .git/index|*/.git/index|.git/index.lock|*/.git/index.lock) continue ;;
+      node_modules/*|*/node_modules/*|.git/*|*/.git/*) offenders+=("$path"); continue ;;
+      build/*|*/build/*|target/*|*/target/*|dist/*|*/dist/*|.gradle/*|*/.gradle/*|.next/*|*/.next/*|.nuxt/*|*/.nuxt/*|.turbo/*|*/.turbo/*|.vite/*|*/.vite/*) continue ;;
+      *.db-shm|*.db-wal|*.sqlite-shm|*.sqlite-wal|*.sqlite3-shm|*.sqlite3-wal) continue ;;
+      coverage/*|*/coverage/*|playwright-report/*|*/playwright-report/*|test-results/*|*/test-results/*) offenders+=("$path"); continue ;;
+      src/*|apps/*|tests/*|e2e/*|docs/*|.taskmaster/*|scripts/*|shared/*|server/*|public/*|plugins/*) continue ;;
+      *) continue ;;  # other paths remain outside this blacklist
     esac
   done
   if [ "${#offenders[@]}" -gt 0 ]; then
@@ -369,7 +400,7 @@ check_write_scope() {
 }
 ```
 
-Invoked after the writer finishes, before review prompt build. Failure here forces a review-fail with reason `scope:violation`.
+Post-write scope checks inspect the uncapped discovered-path list before idle/error retry routing and after feedback retries, including failed attempts. A violation blocks further review and automatic checkpoints with `scope:violation`; an initial nonzero writer status is preserved. Progress display stays capped at 80 paths. Existing blacklist exemptions, pruning/mtime filters and task-state rules remain; this check provides no rollback or read isolation.
 
 #### `parse_review.py` — required review JSON fields
 
@@ -531,7 +562,7 @@ tooling without moving them out of Taskmaster.
 The Method package source lives under `method/` and ships as part of the Mainspring OSS release. CLI commands in this phase wrap those templates and validators.
 
 - [x] **P4.5-1 `mainspring init <name>`.** ✅ DONE 2026-05-03. `py/method_init.py` scaffolds `docs/<slug>/prd.md` from the Method PRD template, creates `.mainspring/state` and `.mainspring/logs`, records `active-prd.json`, initializes Taskmaster when available, and fails closed when the template or Taskmaster bootstrap is missing. Verified by `py/tests/test_method_init.py` and top-level Bats dispatch coverage.
-  - Create `docs/<name>/prd.md` from `method/templates/prd.md` with `{{Project}} = <name>` substituted.
+  - Create `docs/<name>/prd.md` from `method/templates/prd.md` by replacing original exact markers once. The chosen display name stays literal, including marker-like text and backslashes; normalization, slug, path, overwrite and Taskmaster policies are unchanged.
   - Run `task-master init` if `.taskmaster/` doesn't exist.
   - Create `.mainspring/` runtime state dir.
   - Print next-step hints (`run mainspring doctor`, `apply the Method to write the PRD`, etc.).
@@ -827,7 +858,7 @@ After P6 lands, consult `mainspring --metrics --routing` and use the data, not t
 
 ### Reading `--metrics`
 
-Three signals matter most:
+Metrics ignore malformed JSON and non-object JSONL rows. Included objects remain in totals when `exit_code` is missing or invalid; success requires `PASS` and an actual integer `0` (not Boolean, string, null or float). Time filters require usable zoned timestamps; the ledger writer emits UTC/Z and readers accept explicit offsets. Without a time filter, timestamp shape does not exclude rows. A date-only `--since YYYY-MM-DD` still starts the window at midnight UTC. Three signals matter most:
 
 1. **Pass rate per pair, last 14 days.** If a pair drops below 70%, investigate before another wave on it. Below 50% → auto-disable should have kicked in (P6).
 2. **Top 5 stuck task ids.** A stuck task = ≥3 consecutive FAIL waves. Promote stuck tasks out of the queue: either manual review, switch pair, or mark `blocked` with a reason.
@@ -894,8 +925,9 @@ done > .mainspring/logs/waves.jsonl
 
 **Recover:** run `mainspring --repair-state --dry-run` first. If the preview
 only touches stale runtime bookkeeping, run `mainspring --repair-state --force`,
-then resume normal flow. Because flock is fd-based, the OS already released the
-lock when the host died.
+then resume normal flow only after the affected owners account for pending
+invocations and children. The persistent guard file is not a cleanup target;
+its existence or advisory PID cannot prove that all descriptors are closed.
 
 ### Runaway loop (wave count climbing without progress)
 
@@ -913,15 +945,17 @@ reports stale worktrees, run `git worktree prune`. For team backend state, use
 heads that Mainspring reports. Avoid broad tmux cleanup; kill only a specific
 session after manually confirming it is unrelated to active work.
 
-### Lock without owner (rare; only happens if `flock` is unavailable on the platform)
+### Lock contention with unclear PID metadata
 
-**Detect:** `mainspring` exits immediately with "already running" but no process matches the recorded pid.
+**Detect:** acquisition reports contention while advisory PID metadata is absent
+or no longer explains the owner. Neither PID absence nor a process-name scan
+proves the domain is quiet; a pending/preopened invocation can still matter.
 
-**Recover:** run `mainspring --repair-state --dry-run`, then
-`mainspring --repair-state --force` only if the preview identifies the lock as
-stale. Mainspring will re-acquire on next launch. If this happens repeatedly,
-`mainspring doctor` should be flagging missing flock support; install
-`util-linux` or the platform equivalent.
+**Recover:** keep launch intake closed and use the bounded launcher-owner
+procedure in the [coordinated guide](guide.md#coordinated-runtime-lock-updates).
+Inspect backend diagnostics without deleting or replacing `.guard`. The Python
+`fcntl` fallback is supported when native `flock` is unavailable; missing a local
+binary does not prove a universal lock failure or safe migration.
 
 ### Telegram daemon stuck
 
@@ -1008,17 +1042,17 @@ source-install release. Hosted docs are already published at
 
 - [x] `shellcheck -S warning` clean on all `*.sh` (zero errors, zero warnings; no exceptions) _(`make all`: shellcheck OK)_
 - [x] `bash -n` clean on all `*.sh` _(`make all`: bash -n OK)_
-- [x] `ruff check` + `ruff format --check` clean on all `*.py` _(`make all`: ruff check OK, 91 files already formatted)_
+- [ ] `ruff check` + `ruff format --check` clean on all `*.py` _(Ruff 0.17.3 reports 410 findings already present on public baseline `4d365cc`; all 93 Python files are formatted)_
 - [x] Built-in writer/reviewer pair modes resolve through the public CLI and self-test surfaces _(Bats pair parsing, engine command construction, `--self-test`, and `--self-test-all` coverage; real provider-matrix evidence is follow-up credibility work)_
 - [x] Review gate demonstrably receives writer output (no SC2259 regression) _(P1-4 real wave evidence + `make all` stream/review regression tests)_
 
 ### Architecture
 
-- [x] Main entrypoint ≤ 500 LOC _(391 LOC after CLI parsing, runtime dispatch extraction, public env cleanup, and source archive root detection; verified by `wc -l mainspring.sh`)_
+- [x] Main entrypoint ≤ 500 LOC _(442 LOC including bounded signal cleanup; verified by `wc -l mainspring.sh` on 2026-10-30)_
 - [x] Zero `python3 - <<'PY'` heredocs _(all extracted in P2)_
 - [x] No `python3 -c` invocations longer than 80 chars _(all consolidated in P2-2)_
 - [x] No duplicated writer/reviewer engine paths _(unified `run_ai_turn` in `lib/engines.sh`)_
-- [x] All bash modules ≤ 600 LOC _(largest: `lib/help.sh` at 598 LOC; tied with `lib/team.sh`; verified by `wc -l lib/*.sh`)_
+- [x] All bash modules ≤ 600 LOC _(largest: `lib/wave_loop.sh` at 600 LOC; verified by `wc -l lib/*.sh`)_
 
 ### Tests
 
@@ -1038,7 +1072,7 @@ source-install release. Hosted docs are already published at
 - [x] No hardcoded user paths _(verified by `py/tests/test_no_hardcoded_paths.py`)_
   - 2026-05-03 portability hardening: the guard now scans the current standalone release tree (`mainspring.sh`, `lib/`, `py/`, `tests/`, `docs/`, `method/`, packaging metadata, and generated docs assets) instead of stale pre-extraction roots, and `docs/assets/hud-demo.cast` no longer embeds an absolute local user-home PRD path.
 - [x] `flock`-based concurrency _(verified by `py/tests/test_fd_lock.py` + `tests/bats/test_lock.bats`)_
-- [x] Write-scope whitelist enforced; `.env*` / `node_modules` / `.git` always rejected _(verified by `tests/bats/test_write_scope.bats`)_
+- [x] Post-write blacklist checked on discovered paths; secret, dependency and report paths are rejected with existing generated-output and git-index exceptions _(verified by the original and native write-scope Bats tests)_
 - [x] Destructive ops require explicit `--restart-team` / `--repair-state --force` _(automatic team preflight now refuses worktree/state cleanup without `--restart-team`; stale process cleanup and state repair require `--force`; verified by `tests/bats/test_team.bats`, `py/tests/test_runtime_state.py`, shellcheck, and `bash -n`)_
 
 ### UX
@@ -1247,44 +1281,44 @@ truth. It is intentionally a map, not a second implementation plan.
 
 ### CLI truth
 
-- `lib/help.sh` is the public help contract. Any new command or flag needs
-  help text plus Bats coverage before it is documented elsewhere.
+- `lib/help.sh` is the public help contract. Any new command or flag needs help text plus Bats coverage before it is documented elsewhere.
+- PRD validation uses live headings, ADRs, truth tables and lanes, not fenced examples. Required ADR fields need nonblank value blocks, including multiline prose or code; short truth data rows without Source are reported. A heading-only Won't lane remains allowed. Passing is structural validation, not business or approval readiness.
 - `lib/cli.sh` is the argument parser. Public command spelling lives there.
-- `docs/guide.md` is the human-facing command reference. Its command tables
-  group command families with complete runnable variants, not detached flags.
+- `py/prd_brief.py` honors explicit nonnegative Python-character budgets below 32 with the fitting prefix of its existing truncation marker when needed. Already-fitting summaries, normal/default output and the CLI's 6000 default stay unchanged; no new minimum, negative-budget, type or path policy is added.
+- `docs/guide.md` is the human-facing command reference. Its command tables group command families with complete runnable variants, not detached flags.
+- `py/docs_site.py` protects canonical input paths before writes or cleanup; incremental writes also reject source file aliases. Marked rebuilds can unlink output symlinks safely, and unmarked incremental builds keep unrelated custom assets.
+- Taskmaster dependency collections must be arrays when present and non-null. Malformed collections do not establish readiness; missing/null fields and empty arrays remain no prerequisites. Existing `done` checks and identifier matching stay unchanged in `py/backlog_source.py` and `py/taskmaster.py`. Empty rollup/fallback/skip helpers retain one newline; task-path display retains the first complete `.taskmaster/tasks/tasks.json` marker.
+- `py/decompose.py` matches structured generated records by exact source, digest and `taskId`; legacy records require whole `GeneratedBy`, `Source` and `Digest` lines. Invalid container shapes and ambiguous text-only legacy identity fail before backups or task-file writes. Digest, prompt, atomic-write and manual-blocker behavior remain unchanged.
 
 ### Runtime and logs
 
-- `.mainspring/logs/waves.jsonl` is the wave ledger. Additive fields are OK;
-  removal or rename needs a schema-version migration.
-- `py/wave_log.py` owns ledger rows and failure context.
-- `py/replay.py` is the source of truth for reconstructing recorded waves.
-- `py/runtime_state.py` discovers live runtimes for HUD, status, and notifier
-  recovery. It must not trust stale session cwd over a verified process cwd.
+- `.mainspring/logs/waves.jsonl` is the wave ledger. Additive fields are OK; removal or rename needs a schema-version migration.
+- `py/wave_log.py` owns ledger rows and failure context. Its readers skip malformed and non-object JSONL rows while preserving the existing verdict and routing interpretation of JSON objects.
+- `py/replay.py` is the source of truth for reconstructing recorded waves. Each replay child derives its controls from the current source and invocation, including `--save-as`, ignores inherited replay-owned leftovers, and preserves the caller and unrelated runtime environment.
+- `py/runtime_state.py` discovers live runtimes for HUD, status, and notifier recovery. It must not trust stale session cwd over a verified process cwd. Project-scoped stop applies notifier attribution to both PID files. Direct Python CLI relative state arguments become absolute for that comparison; relative-only notifier command evidence remains refused. Current PID, `--all` and generic launcher policies stay unchanged. Legacy skill/mode fallback state paths are confined to the selected state directory before payload read or repair; outside references refuse even with force/dry/missing/nonstale state. Explicit-path priority, valid contained/nested path behavior and live-process policy remain unchanged. Summary display makes absolute paths relative only for true current-directory descendants; similarly prefixed sibling paths stay absolute and relative paths keep their lexical display. Selection, warnings and repair behavior are unchanged.
+- `py/last_run.py` rejects new record separators before any save output; `lib/wizard.sh` stages successful output before cache replacement and preserves tabs. Flat YAML comment boundaries are quote-aware. Only complete old canonical `shlex.quote` single-quoted multiline records are contained; manual double-quoted multiline input still uses historical row parsing. Explicit-user guards, env/enum rules and normal single-line bytes remain unchanged; no crash-atomic/concurrent-writer guarantee is added.
+- `py/stream_json_prettify.py` ignores malformed typed event shapes without hiding later valid events. Valid writer/reviewer output is mirrored to stdout and display files; real I/O errors propagate. Main owns only the optional UTF-8 append display file through ExitStack and closes it on exit while borrowed stdout stays open. Eager creation, flush order, raw logs, text-source rules and provider routing are unchanged; no assistant/result text fallback is added.
+- `lib/team_supervision.sh` requires usable worker counts and uses the reported total for all-dead detection. Complete teams receive no maintenance or dispatch; pending/in-progress or undispatched ready work, and unreadable counts, refuse with restart guidance before claiming no more work. Collector/skip failures refuse, active count failures retry, and verified no-more-work preserves the solo fallback choice. Selected Taskmaster tasks must be arrays; tag priority, missing tag/tasks defaults, phases and task-status policy stay unchanged. Collector scope extraction requires token-start boundaries: unsupported-root suffixes cannot masquerade as supported-root paths. Existing ./ spellings, literal periods, unknown-scope fallback, greedy order, child selection, limits and exclusions remain unchanged.
 
 ### Operator visibility
 
-- `py/hud.py` owns global/local HUD rendering, progress estimation, and clean
-  interrupt behavior.
-- `py/notify_telegram.py` owns Telegram event selection, deduplication,
-  project/folder/tag context, and loop-stopped alerts.
-- `lib/notify.sh` owns only daemon lifecycle and recorded-PID validation.
-  Broad process-name kills are not an acceptable recovery path.
+- `py/hud.py` owns global/local HUD rendering, progress estimation, and clean interrupt behavior.
+- `py/engine_quota.py` keeps malformed numeric/nested evidence unknown; remaining percentages must be finite 0..100, and booleans are not measurements. Binary availability, status, source/reset metadata, legacy used-over-100 saturation at zero and numeric precision are unchanged. In `py/limits.py`, source labels alone remain provenance, not quota/readiness evidence, so a runnable adapter without other data is adapter-only. Existing status, plan, percentage/reset signals and setup/throttling precedence stay unchanged.
+- `py/notify_telegram.py` owns Telegram event selection, deduplication, project/folder/tag context, and loop-stopped alerts.
+- `lib/notify.sh` owns only daemon lifecycle and recorded-PID validation. Broad process-name kills are not an acceptable recovery path.
+- `py/detach_exec.py` rejects missing or empty first command strings with usage status 2 before operations. Valid argv, empty later arguments, setsid-before-exec order, exec OSError status 127 stay unchanged; session-creation exceptions still propagate before exec; no NUL/type/schema or daemon-ready/recovery policy is added.
 
 ### Review and safety gates
 
-- `lib/review.sh` builds the reviewer prompt and applies the hard gate.
-- `py/parse_review.py` validates structured review output and keeps the
-  required review fields machine-checkable.
-- `lib/write_scope.sh` protects the operator's checkout from forbidden path
-  changes and generated-output noise.
+- `lib/review.sh` applies the hard gate; a nonzero parser exit rejects even without output.
+- `py/parse_review.py` treats JSON containers and booleans in known text fields as missing evidence. Numeric score/delta rules, JSON priority, Markdown fallback and duplicate-key policy are unchanged.
+- `lib/write_scope.sh` protects the operator's checkout from forbidden path changes and generated-output noise.
 
 ### Package payload
 
-- `pyproject.toml` declares the installed console script and runtime payload.
+- `pyproject.toml` declares the installed console script and runtime payload. `py/homebrew_formula.py` renders accepted stripped URL/homepage values as literal Ruby string data, preserving quotes, escapes, controls and interpolation text. Ordinary formula bytes, validators and CLI bodies remain unchanged; no new host, SemVer or rejection policy is added.
 - `MANIFEST.in` declares source distribution collateral.
-- `py/mainspring_bootstrap.py` launches the packaged runtime without inheriting
-  a project virtualenv that could hide dependencies.
+- `py/mainspring_bootstrap.py` launches the packaged runtime without inheriting a project virtualenv that could hide dependencies. Optional FNM bootstrap buffers helper output and discards all assignments on helper failure before using the existing first-directory fallback; producer-status handling, allowlisted keys, string/CRLF cleanup and directory rules are unchanged.
 
 ### Verification map
 
@@ -1293,9 +1327,9 @@ truth. It is intentionally a map, not a second implementation plan.
 - Python lint and format: `ruff check py` and `ruff format --check py`.
 - Unit/integration behavior: `python3 -m pytest py/tests -q` and
   `bash tests/bats/run.sh`.
-- Public docs and payload checks: `make release-check` (which expands to
-  `make all`, `make package-smoke`, coverage, PRD validation, and
-  `git diff --check`).
+- Coverage: `make coverage` keeps its 80% threshold and source inclusion, restores supported helper cwd and UTF-8 text newlines; deadlines/custom codecs/conflicting text flags delegate, with unobserved helper lines still counted in source.
+- Public docs and payload checks: `make release-check` expands to `make all`,
+  `make package-smoke`, coverage, PRD validation, and `git diff --check`.
 
 ---
 
@@ -1406,4 +1440,4 @@ path, comparison pages, 60-second demo, and benchmark evidence.
 
 ---
 
-_Last edited: 2026-06-15. This file is the canonical plan; if any other file in the repo disagrees, update it._
+_Last edited: 2026-11-02. This file is the canonical plan; if any other file in the repo disagrees, update it._

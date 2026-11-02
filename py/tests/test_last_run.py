@@ -3,8 +3,8 @@
 
 from __future__ import annotations
 
-import os
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -14,7 +14,7 @@ import pytest
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 
-import last_run  # noqa: E402
+import last_run
 
 SCRIPT = str(HERE.parent / "last_run.py")
 
@@ -31,6 +31,7 @@ def test_save_outputs_all_keys(tmp_path: Path) -> None:
         capture_output=True,
         text=True,
         env=env,
+        check=False,
     )
     assert result.returncode == 0
     lines = result.stdout.strip().splitlines()
@@ -52,6 +53,7 @@ def test_save_empty_env(tmp_path: Path) -> None:
         capture_output=True,
         text=True,
         env=env,
+        check=False,
     )
     assert result.returncode == 0
     for line in result.stdout.strip().splitlines():
@@ -69,6 +71,7 @@ def test_save_quotes_metacharacters(tmp_path: Path) -> None:
         capture_output=True,
         text=True,
         env=env,
+        check=False,
     )
     assert result.returncode == 0
     # Find MODE line and verify it's safely quoted
@@ -89,6 +92,7 @@ def test_load_valid_file(tmp_path: Path) -> None:
         [sys.executable, SCRIPT, "load", str(lr)],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 0
     lines = result.stdout.strip().splitlines()
@@ -107,6 +111,7 @@ def test_load_unquoted_values(tmp_path: Path) -> None:
         [sys.executable, SCRIPT, "load", str(lr)],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 0
     lines = result.stdout.strip().splitlines()
@@ -124,6 +129,7 @@ def test_load_rejects_multiword_values(tmp_path: Path) -> None:
         [sys.executable, SCRIPT, "load", str(lr)],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 0
     lines = result.stdout.strip().splitlines()
@@ -151,6 +157,7 @@ def test_roundtrip(tmp_path: Path) -> None:
         capture_output=True,
         text=True,
         env=env,
+        check=False,
     )
     lr = tmp_path / "last-run.env"
     lr.write_text(save_result.stdout)
@@ -159,6 +166,7 @@ def test_roundtrip(tmp_path: Path) -> None:
         [sys.executable, SCRIPT, "load", str(lr)],
         capture_output=True,
         text=True,
+        check=False,
     )
     lines = load_result.stdout.strip().splitlines()
     parsed = dict(line.split("\t", 1) for line in lines)
@@ -176,24 +184,21 @@ def test_roundtrip(tmp_path: Path) -> None:
 def test_load_valid_yaml_config(tmp_path: Path) -> None:
     config = tmp_path / ".mainspring.yaml"
     config.write_text(
-        "\n".join(
-            [
-                "mode: taskmaster",
-                "pair-mode: codex+codex",
-                "speed_profile: fast",
-                "max-agents: 2",
-                "auto-retry-ci: 1",
-                "auto-retry-ci-log: .omx/logs/latest-ci.log",
-                "agent-mode: architect",
-                "run-once: true",
-                "topology: solo",
-            ]
-        )
+        "mode: taskmaster\n"
+        "pair-mode: codex+codex\n"
+        "speed_profile: fast\n"
+        "max-agents: 2\n"
+        "auto-retry-ci: 1\n"
+        "auto-retry-ci-log: .omx/logs/latest-ci.log\n"
+        "agent-mode: architect\n"
+        "run-once: true\n"
+        "topology: solo"
     )
     result = subprocess.run(
         [sys.executable, SCRIPT, "load", str(config)],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 0
     parsed = dict(line.split("\t", 1) for line in result.stdout.strip().splitlines())
@@ -217,6 +222,7 @@ def test_load_yaml_schema_violation_fails_closed(tmp_path: Path) -> None:
         [sys.executable, SCRIPT, "load", str(config)],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 2
     assert result.stdout == ""
@@ -235,6 +241,7 @@ def test_load_yaml_unknown_property_fails_closed(tmp_path: Path) -> None:
         [sys.executable, SCRIPT, "load", str(config)],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 2
     assert "unknown property: unknown-setting" in result.stderr
@@ -249,6 +256,7 @@ def test_load_yaml_malformed_syntax_fails_closed(tmp_path: Path) -> None:
         [sys.executable, SCRIPT, "load", str(config)],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 2
     assert "line 1: missing ':'" in result.stderr
@@ -256,16 +264,12 @@ def test_load_yaml_malformed_syntax_fails_closed(tmp_path: Path) -> None:
 
 def test_load_yaml_handles_comments_quotes_booleans_and_numbers() -> None:
     loaded = last_run._load_yaml(
-        "\n".join(
-            [
-                "# comment",
-                "mode: taskmaster # inline comment",
-                "model-override: 'gpt # keep hash'",
-                "run-once: false",
-                "max-agents: 3",
-                "auto-retry-ci-log:",
-            ]
-        )
+        "# comment\n"
+        "mode: taskmaster # inline comment\n"
+        "model-override: 'gpt # keep hash'\n"
+        "run-once: false\n"
+        "max-agents: 3\n"
+        "auto-retry-ci-log:"
     )
 
     assert loaded == {
@@ -334,22 +338,20 @@ def test_load_env_raw_ignores_invalid_quotes_and_multi_values(tmp_path: Path) ->
 def test_show_outputs_project_summary_and_repeat_commands(tmp_path: Path) -> None:
     path = tmp_path / "last-run.env"
     path.write_text(
-        "\n".join(
-            [
-                "MODE=taskmaster",
-                "PAIR_MODE=codex+codex",
-                "ENGINE=codex",
-                "MODEL_OVERRIDE=gpt-5.5",
-                "REVIEW_ENGINE=codex",
-                "REVIEW_MODEL_OVERRIDE=gpt-5.5",
-                "TOPOLOGY=team",
-                "SPEED_PROFILE=max",
-                "MAX_AGENTS=6",
-                "AGENT_MODE=code",
-                "RUN_ONCE=false",
-                "AUTO_RETRY_CI=1",
-                "AUTO_CHECKPOINT=true",
-            ]
+        (
+            "MODE=taskmaster\n"
+            "PAIR_MODE=codex+codex\n"
+            "ENGINE=codex\n"
+            "MODEL_OVERRIDE=gpt-5.5\n"
+            "REVIEW_ENGINE=codex\n"
+            "REVIEW_MODEL_OVERRIDE=gpt-5.5\n"
+            "TOPOLOGY=team\n"
+            "SPEED_PROFILE=max\n"
+            "MAX_AGENTS=6\n"
+            "AGENT_MODE=code\n"
+            "RUN_ONCE=false\n"
+            "AUTO_RETRY_CI=1\n"
+            "AUTO_CHECKPOINT=true"
         ),
         encoding="utf-8",
     )
@@ -365,6 +367,7 @@ def test_show_outputs_project_summary_and_repeat_commands(tmp_path: Path) -> Non
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -387,6 +390,7 @@ def test_show_help_exits_zero_without_settings_file(tmp_path: Path) -> None:
         [sys.executable, SCRIPT, "show", str(missing_path), "--help"],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -407,6 +411,7 @@ def test_show_json_outputs_machine_readable_summary(tmp_path: Path) -> None:
         [sys.executable, SCRIPT, "show", str(path), "--project", "/tmp/demo", "--json"],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -428,6 +433,7 @@ def test_cli_no_args() -> None:
         [sys.executable, SCRIPT],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 2
 
@@ -439,6 +445,7 @@ def test_cli_load_no_path() -> None:
         [sys.executable, SCRIPT, "load"],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 2
 
@@ -448,6 +455,7 @@ def test_cli_unknown_subcommand() -> None:
         [sys.executable, SCRIPT, "bogus"],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 2

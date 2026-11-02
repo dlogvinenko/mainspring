@@ -10,7 +10,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 
-import prd_brief  # noqa: E402
+import prd_brief
 
 SCRIPT = str(HERE.parent / "prd_brief.py")
 
@@ -52,7 +52,9 @@ def test_build_brief_fallback_headings(tmp_path: Path) -> None:
 
 
 def test_cli_no_args() -> None:
-    result = subprocess.run([sys.executable, SCRIPT], capture_output=True, text=True)
+    result = subprocess.run(
+        [sys.executable, SCRIPT], capture_output=True, text=True, check=False
+    )
     assert result.returncode == 2
 
 
@@ -60,7 +62,10 @@ def test_cli_valid_file(tmp_path: Path) -> None:
     prd = tmp_path / "prd.md"
     prd.write_text("# Test PRD\n## Vision\nBuild it.\n")
     result = subprocess.run(
-        [sys.executable, SCRIPT, str(prd)], capture_output=True, text=True
+        [sys.executable, SCRIPT, str(prd)],
+        capture_output=True,
+        text=True,
+        check=False,
     )
     assert result.returncode == 0
     assert "Vision" in result.stdout

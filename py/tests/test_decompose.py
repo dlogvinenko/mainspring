@@ -13,7 +13,7 @@ import pytest
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 
-import decompose  # noqa: E402
+import decompose
 
 SCRIPT = str(HERE.parent / "decompose.py")
 
@@ -310,6 +310,7 @@ def test_cli_json_dry_run_outputs_taskmaster_prompt(tmp_path: Path) -> None:
         [sys.executable, SCRIPT, str(prd), "--phase", "P1", "--format", "json"],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -453,6 +454,7 @@ def test_cli_apply_writes_tasks_file(tmp_path: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     data = json.loads(tasks_file.read_text(encoding="utf-8"))
@@ -469,6 +471,7 @@ def test_cli_rejects_invalid_prd(tmp_path: Path) -> None:
         [sys.executable, SCRIPT, str(prd)],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 1
@@ -488,11 +491,13 @@ def test_cli_rejects_unknown_flag_and_format(tmp_path: Path) -> None:
         [sys.executable, SCRIPT, str(prd), "--phase"],
         capture_output=True,
         text=True,
+        check=False,
     )
     bad_format = subprocess.run(
         [sys.executable, SCRIPT, str(prd), "--format", "yaml"],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert unknown.returncode == 2
@@ -521,6 +526,7 @@ def test_cli_apply_reports_missing_taskmaster_file(tmp_path: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 1
@@ -532,6 +538,7 @@ def test_cli_help_exits_zero() -> None:
         [sys.executable, SCRIPT, "--help"],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 0

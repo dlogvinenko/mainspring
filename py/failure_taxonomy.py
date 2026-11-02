@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
 """Failure reason taxonomy for Mainspring.
 
@@ -24,9 +23,9 @@ CLI:
 
 from __future__ import annotations
 
-from cli_runtime import run_cli
-
 import sys
+
+from cli_runtime import run_cli
 
 # ── Canonical failure reasons ────────────────────────────────────────────
 # Each value below is a known, documented failure_reason that may appear

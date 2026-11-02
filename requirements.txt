@@ -4,9 +4,11 @@
 
 rich>=13.7,<15
 
-# Optional provider/local-model engines. Patched LiteLLM releases currently
-# support Python <3.14; on Python 3.14 these markers skip instead of resolving
-# to vulnerable older transitive dependencies.
+# Optional provider/local-model engines retain the validated Python <3.14 scope.
+# Matching markers apply to every provider constraint; Python 3.14 uses the
+# base runtime rather than an unverified optional provider combination.
 litellm>=1.83.11,<2; python_version < "3.14"
+# Keep the optional providers on the patched filelock branch.
+filelock>=4.2.1,<5; python_version < "3.14"
 aiohttp>=3.14.0; python_version < "3.14"
 python-dotenv>=1.2.2; python_version < "3.14"

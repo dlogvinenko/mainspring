@@ -13,8 +13,7 @@ import pytest
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 
-import homebrew_formula  # noqa: E402
-
+import homebrew_formula
 
 VALID_SHA = "0123456789abcdef" * 4
 VALID_URL = "https://github.com/dlogvinenko/mainspring/archive/refs/tags/v1.0.0.tar.gz"

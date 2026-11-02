@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
 """Mainspring wave replay — deterministic re-execution of recorded waves.
 
@@ -29,8 +28,6 @@ Unique to Mainspring — no other autonomous-loop tool offers wave-level replay.
 
 from __future__ import annotations
 
-from cli_runtime import run_cli
-
 import json
 import os
 import subprocess
@@ -38,6 +35,7 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+from cli_runtime import run_cli
 
 # Ledger reader
 
@@ -53,7 +51,7 @@ def read_ledger(path: Path) -> list[dict]:
             continue
         try:
             entries.append(json.loads(raw))
-        except Exception:
+        except (ValueError, TypeError, RecursionError):
             continue
     return entries
 
@@ -828,6 +826,17 @@ def build_replay_environment(
 ) -> dict[str, str]:
     """Build environment for a real replay run."""
     env = os.environ.copy()
+    # Each replay owns its controls; a previous replay must not select its input.
+    for key in (
+        "MAINSPRING_WAVE_ID_OVERRIDE",
+        "MAINSPRING_REPLAYED_FROM",
+        "MAINSPRING_REPLAY_OVERRIDES",
+        "MAINSPRING_REPLAY_PROMPT_FILE",
+        "MAINSPRING_REPLAY_TARGET_ID",
+        "MAINSPRING_REPLAY_ORIGINAL_MODE",
+        "MAINSPRING_REPLAY_LIVE_RECONSTRUCTION",
+    ):
+        env.pop(key, None)
     env.update(build_replay_environment_overrides(original, overrides))
     return env
 

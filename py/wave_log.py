@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
 """Wave ledger JSONL operations for Mainspring.
 
@@ -20,8 +19,6 @@ the ledger file with append mode (``>> waves.jsonl``).
 
 from __future__ import annotations
 
-from cli_runtime import run_cli
-
 import fcntl
 import json
 import os
@@ -29,6 +26,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from cli_runtime import run_cli
 from failure_taxonomy import normalise_failure_reason_class
 
 
@@ -53,7 +51,7 @@ def _as_bool(value: str | None, *, default: bool = False) -> bool:
 def _is_product_file_change(path: str) -> bool:
     normalized = path.strip()
     if normalized.startswith("./"):
-        normalized = normalized[2:]
+        normalized = normalized.removeprefix("./")
     if not normalized:
         return False
     if normalized in {"README.md", "CLAUDE.md", "AGENTS.md"}:
@@ -208,9 +206,9 @@ def _read_usage_sidecar(path_value: str) -> dict[str, Any]:
 
 def build_wave_entry() -> dict:
     """Build a wave ledger entry dict from environment variables."""
-    from datetime import datetime, timezone
+    from datetime import UTC, datetime
 
-    timestamp = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    timestamp = datetime.now(UTC).isoformat().replace("+00:00", "Z")
     writer_engine = os.environ.get("ENGINE_VALUE") or ""
     reviewer_engine = os.environ.get("REVIEWER_VALUE") or ""
     writer_model = os.environ.get("MODEL_VALUE") or "default"
@@ -337,15 +335,17 @@ def cmd_append(ledger_path: str | None = None) -> None:
 
 
 def read_ledger(path: Path) -> list[dict]:
-    """Parse all valid JSONL entries from *path*."""
+    """Parse object JSONL entries, ignoring malformed or non-object rows."""
     entries: list[dict] = []
     for raw in path.read_text(encoding="utf-8", errors="ignore").splitlines():
         raw = raw.strip()
         if not raw:
             continue
         try:
-            entries.append(json.loads(raw))
-        except Exception:
+            entry = json.loads(raw)
+            if isinstance(entry, dict):
+                entries.append(entry)
+        except (ValueError, TypeError, RecursionError):
             continue
     return entries
 

@@ -51,7 +51,7 @@ fi
 mkdir -p "$(dirname "$DEST")"
 assert_safe_dest
 
-if [ -e "$DEST" ]; then
+if [ -e "$DEST" ] || [ -L "$DEST" ]; then
   if [ "$FORCE" -eq 1 ]; then
     echo "Removing existing install at $DEST"
     rm -rf "$DEST"

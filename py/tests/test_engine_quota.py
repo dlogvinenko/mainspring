@@ -14,8 +14,8 @@ import pytest
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 
-import engine_quota  # noqa: E402
-from engines._base import EngineInfo  # noqa: E402
+import engine_quota
+from engines._base import EngineInfo
 
 SCRIPT = str(HERE.parent / "engine_quota.py")
 
@@ -42,6 +42,7 @@ engine_quota.cmd_codex()
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 0
     assert "Codex|" in result.stdout
@@ -86,6 +87,7 @@ engine_quota.cmd_codex()
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 0
     assert "Codex|" in result.stdout
@@ -118,6 +120,7 @@ engine_quota.cmd_codex()
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -147,6 +150,7 @@ def test_claude_with_rate_limit(tmp_path: Path) -> None:
         [sys.executable, SCRIPT, "claude", str(probe)],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 0
     assert "Claude Code|" in result.stdout
@@ -164,6 +168,7 @@ def test_claude_no_rate_limit(tmp_path: Path) -> None:
         [sys.executable, SCRIPT, "claude", str(probe)],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 0
     assert "Claude Code|" in result.stdout
@@ -179,6 +184,7 @@ def test_claude_empty_probe(tmp_path: Path) -> None:
         [sys.executable, SCRIPT, "claude", str(probe)],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 0
     assert "status=unknown" in result.stdout
@@ -211,6 +217,7 @@ def test_cli_no_args() -> None:
         [sys.executable, SCRIPT],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 2
 
@@ -222,6 +229,7 @@ def test_cli_claude_no_path() -> None:
         [sys.executable, SCRIPT, "claude"],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 2
 
@@ -240,6 +248,7 @@ def test_cli_usage_errors(args: list[str], message: str) -> None:
         [sys.executable, SCRIPT, *args],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 2
@@ -266,6 +275,7 @@ def test_common_engine_codex_json_no_sessions(tmp_path: Path) -> None:
         capture_output=True,
         text=True,
         env=env,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -308,6 +318,7 @@ def test_common_engine_claude_json_with_probe(tmp_path: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -327,6 +338,7 @@ def test_common_engine_gemini_json_litellm_dispatch() -> None:
         [sys.executable, SCRIPT, "--engine", "gemini", "--format", "json"],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -343,6 +355,7 @@ def test_common_engine_grok_json_litellm_dispatch() -> None:
         [sys.executable, SCRIPT, "--engine", "grok", "--format", "json"],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -361,6 +374,7 @@ def test_common_engine_codex_text_output(tmp_path: Path) -> None:
         capture_output=True,
         text=True,
         env=env,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -383,6 +397,7 @@ def test_common_litellm_provider_engines_json_dispatch_without_quota_calls() -> 
             [sys.executable, SCRIPT, "--engine", engine_name, "--format", "json"],
             capture_output=True,
             text=True,
+            check=False,
         )
 
         assert result.returncode == 0
@@ -401,6 +416,7 @@ def test_common_engine_litellm_json_provider_bridge() -> None:
         [sys.executable, SCRIPT, "--engine", "litellm", "--format", "json"],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 0
@@ -476,6 +492,7 @@ def test_common_engine_unknown_fails() -> None:
         [sys.executable, SCRIPT, "--engine", "grokx", "--format", "json"],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert result.returncode == 2

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
 """Scaffold a Method-shaped project tree for Mainspring.
 
@@ -12,8 +11,6 @@ Taskmaster when ``.taskmaster/`` is absent.
 
 from __future__ import annotations
 
-from cli_runtime import run_cli
-
 import json
 import os
 import re
@@ -23,6 +20,7 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+from cli_runtime import run_cli
 
 HELP_TEXT = """Usage: mainspring init <name> [--force]
 
@@ -93,9 +91,9 @@ def template_path(root: Path) -> Path:
 
 
 def render_template(template: str, name: str) -> str:
-    rendered = template.replace("{{Project / Scope name}}", name)
-    rendered = rendered.replace("{{Project}}", name)
-    return rendered
+    return re.sub(
+        r"\{\{Project / Scope name\}\}|\{\{Project\}\}", lambda match: name, template
+    )
 
 
 def _find_taskmaster() -> str | None:
@@ -108,6 +106,7 @@ def _run_taskmaster_init(root: Path, binary: str) -> tuple[bool, str]:
         cwd=str(root),
         capture_output=True,
         text=True,
+        check=False,
     )
     if result.returncode == 0:
         return True, f"initialized via {Path(binary).name}"

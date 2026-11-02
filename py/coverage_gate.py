@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
 """Dependency-free Python line coverage gate for Mainspring.
 
@@ -8,8 +7,6 @@ another runtime dependency before extraction.
 """
 
 from __future__ import annotations
-
-from cli_runtime import run_cli
 
 import argparse
 import contextlib
@@ -25,6 +22,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from cli_runtime import run_cli
 
 DEFAULT_THRESHOLD = 80.0
 DEFAULT_TOP = 8
@@ -90,7 +88,7 @@ def iter_source_files(py_dir: Path) -> list[Path]:
 
 def executable_lines(path: Path) -> set[int]:
     """Return executable source lines using the same parser as stdlib trace."""
-    raw = trace._find_executable_linenos(str(path))  # noqa: SLF001
+    raw = trace._find_executable_linenos(str(path))
     lines: set[int] = set()
     for line in raw:
         try:
@@ -197,7 +195,12 @@ class _CapturedStream(io.TextIOWrapper):
 
     def text_value(self) -> str:
         self.flush()
-        return self._bytes.getvalue().decode("utf-8")
+        return (
+            self._bytes.getvalue()
+            .decode("utf-8")
+            .replace("\r\n", "\n")
+            .replace("\r", "\n")
+        )
 
     def bytes_value(self) -> bytes:
         self.flush()
@@ -216,16 +219,15 @@ def _patched_argv_env_cwd(
     old_env = os.environ.copy()
     old_cwd = Path.cwd()
     sys.argv = argv
-    if env is not None:
-        os.environ.clear()
-        os.environ.update(env)
-    if cwd is not None:
-        os.chdir(cwd)
     try:
+        if env is not None:
+            os.environ.clear()
+            os.environ.update(env)
+        if cwd is not None:
+            os.chdir(cwd)
         yield
     finally:
-        if cwd is not None:
-            os.chdir(old_cwd)
+        os.chdir(old_cwd)
         os.environ.clear()
         os.environ.update(old_env)
         sys.argv = old_argv
@@ -260,7 +262,8 @@ def _run_python_script_in_process(
             else:
                 print(code, file=sys.stderr)
                 return_code = 1
-        except BaseException:  # pragma: no cover - mirrors child process failure
+        # Arbitrary child-script failures must become a captured nonzero process result.
+        except BaseException:  # noqa: BLE001
             traceback.print_exc()
             return_code = 1
     return (
@@ -288,6 +291,17 @@ def _trace_python_subprocesses(py_dir: Path):
         command = kwargs.get("args", popenargs[0] if popenargs else None)
         traceable, _script = _is_traceable_python_script(command, py_dir)
         if not traceable:
+            return original_run(*popenargs, **kwargs)
+        # Delegate deadlines and custom decoding; their child lines remain unobserved.
+        if any(
+            kwargs.get(key) is not None for key in ("timeout", "encoding", "errors")
+        ):
+            return original_run(*popenargs, **kwargs)
+        if (
+            kwargs.get("text") is not None
+            and kwargs.get("universal_newlines") is not None
+            and bool(kwargs["text"]) != bool(kwargs["universal_newlines"])
+        ):
             return original_run(*popenargs, **kwargs)
         if kwargs.get("stdin") is not None or kwargs.get("input") is not None:
             return original_run(*popenargs, **kwargs)

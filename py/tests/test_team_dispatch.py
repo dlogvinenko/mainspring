@@ -16,7 +16,7 @@ import pytest
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 
-import team_dispatch  # noqa: E402
+import team_dispatch
 
 SCRIPT = str(HERE.parent / "team_dispatch.py")
 RUNTIME_ENV_KEYS = (
@@ -338,8 +338,8 @@ def test_counts_happy_path(mock_run: MagicMock, capsys: object) -> None:
     mock_run.return_value = _make_completed(0, _list_tasks_response(tasks))
 
     team_dispatch.cmd_counts("test-team")
-    import io
     import contextlib
+    import io
 
     buf = io.StringIO()
     mock_run.return_value = _make_completed(0, _list_tasks_response(tasks))
@@ -699,6 +699,7 @@ def test_cli_no_args() -> None:
         [sys.executable, SCRIPT],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 2
 
@@ -709,6 +710,7 @@ def test_cli_unknown_subcommand() -> None:
         [sys.executable, SCRIPT, "bogus"],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 2
 
@@ -719,6 +721,7 @@ def test_cli_dispatch_missing_args() -> None:
         [sys.executable, SCRIPT, "dispatch", "team"],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 2
 
@@ -766,6 +769,7 @@ def test_cli_counts_missing_args() -> None:
         [sys.executable, SCRIPT, "counts"],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 2
 
@@ -776,6 +780,7 @@ def test_cli_nudge_missing_args() -> None:
         [sys.executable, SCRIPT, "nudge"],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 2
 
@@ -786,5 +791,6 @@ def test_cli_requeue_missing_args() -> None:
         [sys.executable, SCRIPT, "requeue"],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 2
