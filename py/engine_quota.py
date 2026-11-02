@@ -47,7 +47,14 @@ def codex_quota_line() -> str:
                         raise _Found
             except _Found:
                 break
-            except Exception:
+            except (
+                OSError,
+                UnicodeError,
+                ValueError,
+                TypeError,
+                AttributeError,
+                RecursionError,
+            ):
                 continue
 
     if not isinstance(latest_payload, dict) or not latest_payload:
@@ -101,7 +108,7 @@ def claude_quota_line(probe_path: str) -> str:
             continue
         try:
             obj = json.loads(line)
-        except Exception:
+        except (ValueError, TypeError, RecursionError):
             continue
         if obj.get("type") == "rate_limit_event":
             info = obj.get("rate_limit_info", {}) or {}

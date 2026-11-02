@@ -250,7 +250,14 @@ def read_taskmaster_tag(project_root: Path | None) -> str:
             tag = _clean_context_value(state.get("currentTag"))
             if tag:
                 return tag
-        except Exception:
+        except (
+            OSError,
+            UnicodeError,
+            ValueError,
+            TypeError,
+            AttributeError,
+            RecursionError,
+        ):
             pass
     return "master" if taskmaster_dir.exists() else ""
 
@@ -544,7 +551,7 @@ def _parse_ts(value: object) -> datetime | None:
     if not value:
         return None
     try:
-        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))  # noqa: FURB162 - preserve rejection of malformed Z separators
     except (TypeError, ValueError):
         return None
     if parsed.tzinfo is None:
@@ -1061,9 +1068,10 @@ def build_daily_digest(
     lines = [
         f"📊 Daily Digest ({digest_date.strftime('%Y-%m-%d')})",
         *format_event_context(context=context),
-        "Waves: "
-        f"{total} ({passed} pass, {failed} fail"
-        f"{f', {other} other' if other else ''})",
+        (
+            f"Waves: {total} ({passed} pass, {failed} fail"
+            f"{f', {other} other' if other else ''})"
+        ),
         f"Pass rate: {pass_rate:.0f}%",
         f"Mean duration: {mean_dur:.0f}s",
         f"Quota: {quota_status}",

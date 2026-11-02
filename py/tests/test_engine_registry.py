@@ -828,8 +828,7 @@ def test_readiness_errors_reports_missing_binary(
     errors = registry.readiness_errors("missing-binary", require_executable=True)
 
     assert errors == [
-        "missing-binary not found in PATH for engine missing-binary; "
-        "install missing-binary and ensure it is on PATH"
+        "missing-binary not found in PATH for engine missing-binary; install missing-binary and ensure it is on PATH"
     ]
 
 

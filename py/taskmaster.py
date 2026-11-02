@@ -87,7 +87,14 @@ def _active_tag(tasks_file: str) -> str:
             tag = str(state.get("currentTag") or "").strip()
             if tag:
                 return tag
-        except Exception:
+        except (
+            OSError,
+            UnicodeError,
+            ValueError,
+            TypeError,
+            AttributeError,
+            RecursionError,
+        ):
             pass
 
     return "master"
@@ -324,7 +331,14 @@ def cmd_status_summary(tasks_file: str) -> None:
     """Print task status counts, scheduler decision, and integrity checks."""
     try:
         tasks = _load_tasks(tasks_file)
-    except Exception as exc:
+    except (
+        OSError,
+        UnicodeError,
+        ValueError,
+        TypeError,
+        AttributeError,
+        RecursionError,
+    ) as exc:
         print(f"Taskmaster: unreadable ({exc})")
         return
 
@@ -368,7 +382,7 @@ def cmd_status_summary(tasks_file: str) -> None:
         _print_integrity(integrity_warnings)
         return
 
-    _, _, task = sorted(candidates)[0]
+    _, _, task = sorted(candidates)[0]  # noqa: FURB192 - retain validation of the complete candidate ordering
     task_id = str(task.get("id"))
     title = str(task.get("title") or "").strip()
     subs = task.get("subtasks", []) or []
@@ -403,7 +417,7 @@ def cmd_status_summary(tasks_file: str) -> None:
         )
         print(f"scheduler: {lane} #{task_id} {title}")
     elif ready_subs:
-        _, sid, sub_status = sorted(ready_subs)[0]
+        _, sid, sub_status = min(ready_subs)
         lane = "SELECT_REVIEW" if sub_status == "review" else "SELECT_IMPLEMENTATION"
         print(f"scheduler: {lane} #{sid} from parent #{task_id} {title}")
     elif review_subs:
@@ -437,7 +451,14 @@ def cmd_scope_summary(tasks_file: str, plugins_ignored: bool = False) -> None:
     """Print scope safety analysis for the next work item."""
     try:
         tasks = _load_tasks(tasks_file)
-    except Exception as exc:
+    except (
+        OSError,
+        UnicodeError,
+        ValueError,
+        TypeError,
+        AttributeError,
+        RecursionError,
+    ) as exc:
         print(_format_tasks_load_error("scope", tasks_file, exc))
         return
 
@@ -466,7 +487,7 @@ def cmd_scope_summary(tasks_file: str, plugins_ignored: bool = False) -> None:
         print("scope: no ready top-level Taskmaster item")
         return
 
-    _, _, task = sorted(parents)[0]
+    _, _, task = sorted(parents)[0]  # noqa: FURB192 - retain validation of the complete candidate ordering
     task_id = str(task.get("id"))
     selected_id = task_id
     selected_sub: dict | None = None
@@ -476,7 +497,7 @@ def cmd_scope_summary(tasks_file: str, plugins_ignored: bool = False) -> None:
         if status in {"pending", "in-progress", "review"} and _sub_deps_done(task, sub):
             ready_subs.append((_rank(status), int(sub.get("id") or 0), sub))
     if ready_subs:
-        _, _, selected_sub = sorted(ready_subs)[0]
+        _, _, selected_sub = sorted(ready_subs)[0]  # noqa: FURB192 - retain validation of the complete candidate ordering
         selected_id = f"{task_id}.{selected_sub.get('id')}"
 
     text = text_for(task, selected_sub)
@@ -580,7 +601,14 @@ def cmd_next(tasks_file: str, active_prd_file: str | None = None) -> int:
     """Print the next blocker-aware task or subtask ID."""
     try:
         tasks = _load_tasks(tasks_file)
-    except Exception as exc:
+    except (
+        OSError,
+        UnicodeError,
+        ValueError,
+        TypeError,
+        AttributeError,
+        RecursionError,
+    ) as exc:
         print(_format_tasks_load_error("next", tasks_file, exc), file=sys.stderr)
         return 2
 
@@ -802,7 +830,14 @@ def cmd_scope_check(tasks_file: str) -> int:
     """Audit active Taskmaster items against Mainspring Method commandments."""
     try:
         tasks = _load_tasks(tasks_file)
-    except Exception as exc:
+    except (
+        OSError,
+        UnicodeError,
+        ValueError,
+        TypeError,
+        AttributeError,
+        RecursionError,
+    ) as exc:
         print(_format_tasks_load_error("scope-check", tasks_file, exc))
         return 2
 

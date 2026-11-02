@@ -70,11 +70,21 @@ The ten commandments. Anything below this line bows to them. If a phase plan, a 
 
 ## Current truth snapshot (verified)
 
-Refreshed 2026-10-30 for signal shutdown, Claude failures and provider dependencies
-against public base `4d365cc`. Current checks below are local draft evidence;
-the baseline lint findings still block a clean gate.
-Publication, global installation and coverage rows remain historical evidence;
-they were not revalidated as current results in this draft.
+### Local candidate validation, 2026-11-02
+
+`make all`, package smoke and the coverage gate pass locally. Normal and traced
+Python runs each pass 2101 tests with 1 skipped; all 234 Bats pass. Ruff check and
+format, shell syntax/shellcheck, HUD, docs-site and dependency audit pass.
+Measured helper coverage is 92.9% (11450/12326 executable lines), above the unchanged
+80% threshold. Wheel and sdist smoke checks pass. Live provider/account access and
+global installation are outside this local validation.
+
+### Historical validation, 2026-10-30
+
+The dated gate/publication observations below retain the earlier validation
+against public base `4d365cc`; they do not describe current candidate readiness.
+Structural file and function counts reflect the current tree. Global installation
+and hosted publication observations retain their own historical dates.
 
 | Metric                                  | Value                                              | Source                                                   |
 | --------------------------------------- | -------------------------------------------------- | -------------------------------------------------------- |
@@ -83,9 +93,9 @@ they were not revalidated as current results in this draft.
 | Source shell syntax                     | passes                                             | `bash -n mainspring.sh lib/*.sh`                         |
 | Source shell lint                       | passes                                             | `shellcheck -S warning mainspring.sh lib/*.sh`           |
 | Python lint                             | 410 baseline findings, zero additions                | Ruff 0.17.3 comparison with public `4d365cc` on 2026-10-30 |
-| Python format                           | passes, 118 files already formatted                 | `ruff format --check py`                                 |
+| Python format                           | passes, 119 files already formatted                 | `ruff format --check py`                                 |
 | Active embedded Python in shell paths   | 0 heredoc / inline-parser hits                     | `rg` scan for `python3 - <<` and `python3 -c` in shell    |
-| Pytest suite files                      | 67                                                 | `find py/tests -name 'test_*.py'` plus count             |
+| Pytest suite files                      | 68                                                 | `find py/tests -name 'test_*.py'` plus count             |
 | Bats suite files                        | 14                                                 | `find tests/bats -name '*.bats'` plus count              |
 | Python line coverage                    | 90.6% (coverage gate pass)                         | `make coverage` on 2026-06-16                           |
 | Full local gate                         | blocked: 1149 Python tests passed, 1 skipped; 223 Bats passed (doctor fixtures isolate inherited interpreter overrides); HUD/docs-site and package smoke pass; 410 baseline Ruff findings; known filelock findings resolved in the validated public dependency graphs | separate local gates on 2026-10-30; `make all` stops at baseline lint |
@@ -106,6 +116,11 @@ Structured Claude failure classification accepts engine error evidence and
 `rejected` rate-limit events. An `allowed_warning` event is not exhaustion;
 task prose mentioning quota and malformed rate-limit metadata do not cause a
 quota classification or crash the failure-reporting path.
+
+External-data fallbacks catch known filesystem, encoding, parsing and process-tool
+failures rather than every helper exception. Provider callbacks and traced child
+scripts retain explicit failure boundaries. Invalid timestamp separators and
+ambiguous duplicate task ordering retain their existing rejection behavior.
 
 **Resolved historical critical bug:** the former SC2259 path
 `"${cmd[@]}" | tee "$raw_file" | python3 - <<'PY' ... PY` let the heredoc
@@ -1419,4 +1434,4 @@ path, comparison pages, 60-second demo, and benchmark evidence.
 
 ---
 
-_Last edited: 2026-10-30. This file is the canonical plan; if any other file in the repo disagrees, update it._
+_Last edited: 2026-11-02. This file is the canonical plan; if any other file in the repo disagrees, update it._

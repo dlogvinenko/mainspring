@@ -533,7 +533,7 @@ def _load_taskmaster(tasks_file: Path) -> dict:
         raise ValueError("Taskmaster master must be an object")  # noqa: TRY004
     tasks = master.setdefault("tasks", [])
     if not isinstance(tasks, list):
-        raise ValueError("Taskmaster file must contain master.tasks array")
+        raise ValueError("Taskmaster file must contain master.tasks array")  # noqa: TRY004 - preserve the documented malformed-data exception contract
     if any(not isinstance(task, dict) for task in tasks):
         raise ValueError("Taskmaster master.tasks entries must be objects")
     return data

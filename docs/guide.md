@@ -345,6 +345,12 @@ percentages must be finite numbers from 0 to 100; booleans are not measurements.
 Valid legacy used percentages above 100 still yield zero remaining. Binary
 availability, status, source and reset metadata retain their existing meanings.
 
+Read boundaries retain their empty or unknown fallbacks for known filesystem,
+encoding, structured-data and system-process failures. Other exception types
+propagate instead of masquerading as missing metadata. Third-party completion
+and cost callbacks retain separate failure handling because provider exception
+classes are open-ended; a failed completion still exits nonzero.
+
 The limits report retains source labels as provenance. A label such as
 `codex_sessions`, without other data, leaves a runnable adapter as
 `adapter-only`. Existing status, plan, percentage and reset signals still

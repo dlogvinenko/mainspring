@@ -42,7 +42,7 @@ def parse_field(raw: str, field: str) -> str:
     """Extract *field* from JSON string *raw*."""
     try:
         data = json.loads(raw)
-    except Exception:
+    except (ValueError, TypeError, RecursionError):
         if field in {"dead-workers", "total-workers", "pending-lines"}:
             return "0"
         if field == "usable-check":

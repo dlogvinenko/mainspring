@@ -57,7 +57,7 @@ def _parse_int_arg(value: str, name: str, usage: str) -> int:
 def _read_json(path: Path) -> dict | None:
     try:
         return json.loads(path.read_text(encoding="utf-8"))
-    except Exception:
+    except (OSError, UnicodeError, ValueError, TypeError, RecursionError):
         return None
 
 
@@ -100,7 +100,7 @@ def cmd_team_status(team_name: str, status_json: str) -> None:
     """Print team status summary from team backend JSON."""
     try:
         payload = json.loads(status_json)
-    except Exception:
+    except (ValueError, TypeError, RecursionError):
         print(f"{team_name}: status unreadable")
         return
     workers = payload.get("workers") or {}
@@ -207,7 +207,7 @@ def cmd_runtime_summary(state_dir: str) -> None:
         try:
             pid_text = pid_file.read_text(encoding="utf-8").strip()
             pid = int(pid_text)
-        except Exception:
+        except (OSError, UnicodeError, ValueError):
             warnings.append(f"stale pid file candidate: {pid_file.name} unreadable")
             continue
         if not Path(f"/proc/{pid}").exists() and os.name != "posix":
@@ -267,7 +267,7 @@ def cmd_repair(state_dir: str, dry_run: bool = False, force: bool = False) -> No
     for pid_file in _runtime_pid_files(root):
         try:
             pid = int(pid_file.read_text(encoding="utf-8").strip())
-        except Exception:
+        except (OSError, UnicodeError, ValueError):
             stale_pid_files.append((pid_file, "unreadable"))
             continue
         if not _pid_alive(pid):
@@ -353,7 +353,7 @@ def cmd_repair(state_dir: str, dry_run: bool = False, force: bool = False) -> No
         try:
             path.unlink()
             print(f"Removed stale pid file: {path}")
-        except Exception as exc:
+        except OSError as exc:
             print(f"Could not remove stale pid file {path}: {exc}")
 
 
@@ -378,7 +378,7 @@ def cmd_cleanup_stale(current_pid: int, ttl_minutes: int, force: bool = False) -
         output = subprocess.check_output(
             ["ps", "-axo", "pid=,etime=,command="], text=True
         )
-    except Exception:
+    except (OSError, subprocess.SubprocessError, UnicodeError):
         return
 
     def elapsed_minutes(value: str) -> int:
@@ -439,7 +439,7 @@ def cmd_find_latest_team(team_state_dir: str) -> None:
     for _, config in configs:
         try:
             data = json.loads(config.read_text())
-        except Exception:
+        except (OSError, UnicodeError, ValueError, TypeError, RecursionError):
             continue
         name = data.get("name") or config.parent.name
         if name:
@@ -468,7 +468,7 @@ def _pid_command(pid: int) -> str:
             ["ps", "-p", str(pid), "-o", "command="],
             text=True,
         ).strip()
-    except Exception:
+    except (OSError, subprocess.SubprocessError, UnicodeError):
         return ""
 
 
@@ -506,7 +506,7 @@ def _is_mainspring_command(command: str) -> bool:
         return True
     if name in {"notify_telegram.py", "hud.py"}:
         return "mainspring" in command or ".mainspring" in command
-    return token.startswith("mainspring ") or token.startswith("./mainspring.sh ")
+    return token.startswith(("mainspring ", "./mainspring.sh "))
 
 
 def _command_tokens(command: str) -> list[str]:
@@ -586,8 +586,7 @@ def _stop_team_backend(team_name: str) -> bool:
         result = subprocess.run(
             ["omx", "team", "shutdown", team_name, "--force"],
             check=False,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
             text=True,
         )
     except FileNotFoundError:
@@ -651,7 +650,7 @@ def cmd_stop_processes(
 
     try:
         output = subprocess.check_output(["ps", "-axo", "pid=,command="], text=True)
-    except Exception as exc:
+    except (OSError, subprocess.SubprocessError, UnicodeError) as exc:
         print(f"Could not inspect process list: {exc}")
         return
 

@@ -345,7 +345,7 @@ def read_ledger(path: Path) -> list[dict]:
             entry = json.loads(raw)
             if isinstance(entry, dict):
                 entries.append(entry)
-        except Exception:
+        except (ValueError, TypeError, RecursionError):
             continue
     return entries
 

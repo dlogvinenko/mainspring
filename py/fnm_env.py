@@ -28,7 +28,7 @@ def _clean_env_value(value: object) -> str:
 def emit_assignments(stdin: TextIO = sys.stdin, stdout: TextIO = sys.stdout) -> int:
     try:
         payload = json.load(stdin)
-    except Exception:
+    except (OSError, UnicodeError, ValueError, TypeError, RecursionError):
         return 1
     if not isinstance(payload, dict):
         return 1

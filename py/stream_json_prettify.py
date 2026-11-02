@@ -171,7 +171,7 @@ def main(argv: list[str] | None = None) -> int:
                 continue
             try:
                 obj = json.loads(line)
-            except Exception:
+            except (ValueError, TypeError, RecursionError):
                 continue
             _handle_event(obj, args.mode, out)
     return 0

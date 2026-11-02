@@ -8,8 +8,6 @@ another runtime dependency before extraction.
 
 from __future__ import annotations
 
-from cli_runtime import run_cli
-
 import argparse
 import contextlib
 import io
@@ -24,6 +22,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from cli_runtime import run_cli
 
 DEFAULT_THRESHOLD = 80.0
 DEFAULT_TOP = 8
@@ -263,7 +262,8 @@ def _run_python_script_in_process(
             else:
                 print(code, file=sys.stderr)
                 return_code = 1
-        except BaseException:  # pragma: no cover - mirrors child process failure
+        # Arbitrary child-script failures must become a captured nonzero process result.
+        except BaseException:  # noqa: BLE001
             traceback.print_exc()
             return_code = 1
     return (

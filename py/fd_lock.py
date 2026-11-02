@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import errno
 import sys
-from typing import Sequence
+from collections.abc import Sequence
 
 from cli_runtime import run_cli
 

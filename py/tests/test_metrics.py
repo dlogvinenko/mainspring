@@ -809,6 +809,7 @@ def test_cli_update_disabled_pairs_writes_state(tmp_path: Path) -> None:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert listed.stdout.strip() == "claude-haiku+claude-haiku"
 

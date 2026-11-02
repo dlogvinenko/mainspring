@@ -225,10 +225,9 @@ def _validate_schema(
                 errors.append(f"{key} must be >= {minimum}")
             if maximum is not None and as_int > maximum:
                 errors.append(f"{key} must be <= {maximum}")
-        if spec_type == "boolean":
-            if value not in {"true", "false"}:
-                errors.append(f"{key} must be true/false")
-                continue
+        if spec_type == "boolean" and value not in {"true", "false"}:
+            errors.append(f"{key} must be true/false")
+            continue
         if "enum" in spec:
             allowed = list(spec["enum"])
             if value not in map(str, allowed):
@@ -462,7 +461,7 @@ def cmd_show(path_str: str, args: list[str]) -> None:
     print(f"Project:       {payload['project']}")
     print(f"Settings file: {payload['settings_file']}")
     print(f"Saved:         {payload['saved_at']}")
-    print("")
+    print()
     print(f"Mode:          {summary['mode']}")
     print(f"Topology:      {summary['topology']}")
     print(f"Pair:          {summary['pair']}")
@@ -476,7 +475,7 @@ def cmd_show(path_str: str, args: list[str]) -> None:
     print(f"CI retry:      {summary['ci_retry']}")
     print(f"CI log:        {summary['ci_log']}")
     print(f"Checkpoint:    {summary['auto_checkpoint']}")
-    print("")
+    print()
     print("Repeat:")
     print(f"  {commands['resume_here']}")
     print(f"  {commands['resume_anywhere']}")

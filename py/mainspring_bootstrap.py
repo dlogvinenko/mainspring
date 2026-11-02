@@ -6,9 +6,9 @@ from __future__ import annotations
 import os
 import shutil
 import sys
+from collections.abc import Iterable
 from importlib import metadata
 from pathlib import Path
-from typing import Iterable
 
 from cli_runtime import run_cli
 

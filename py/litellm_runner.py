@@ -147,7 +147,8 @@ def extract_response_cost(
         return None
     try:
         return _as_float(cost_func(response))
-    except Exception:
+    # Provider and cost callbacks can raise vendor-specific exception classes.
+    except Exception:  # noqa: BLE001
         return None
 
 
@@ -285,7 +286,8 @@ def main(
     except ResponseShapeError as exc:
         print(f"mainspring: litellm response shape invalid: {exc}", file=stderr)
         return 1
-    except Exception as exc:
+    # Provider and cost callbacks can raise vendor-specific exception classes.
+    except Exception as exc:  # noqa: BLE001
         print(f"mainspring: litellm completion failed: {exc}", file=stderr)
         return 1
 

@@ -53,7 +53,7 @@ def _parse_ts(value: object) -> datetime | None:
                 numeric = numeric / 1000.0
             return datetime.fromtimestamp(numeric, tz=UTC)
     try:
-        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))  # noqa: FURB162 - preserve rejection of malformed Z separators
     except ValueError:
         return None
     if parsed.tzinfo is None:

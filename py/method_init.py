@@ -106,6 +106,7 @@ def _run_taskmaster_init(root: Path, binary: str) -> tuple[bool, str]:
         cwd=str(root),
         capture_output=True,
         text=True,
+        check=False,
     )
     if result.returncode == 0:
         return True, f"initialized via {Path(binary).name}"

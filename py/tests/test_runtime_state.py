@@ -637,10 +637,12 @@ def test_stop_processes_stops_recorded_team_backends(
         args: list[str],
         *,
         check: bool,
-        stdout: object,
-        stderr: object,
+        capture_output: bool,
         text: bool,
     ) -> subprocess.CompletedProcess[str]:
+        assert capture_output is True
+        assert check is False
+        assert text is True
         calls.append(args)
         return subprocess.CompletedProcess(args, 0, "", "")
 

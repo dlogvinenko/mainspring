@@ -44,7 +44,7 @@ def read_ledger(path: Path) -> list[dict]:
             parsed = json.loads(raw)
             if isinstance(parsed, dict):
                 entries.append(parsed)
-        except Exception:
+        except (ValueError, TypeError, RecursionError):
             continue
     return entries
 
@@ -54,9 +54,9 @@ def _parse_timestamp(entry: dict) -> datetime | None:
     if not ts:
         return None
     try:
-        parsed = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+        parsed = datetime.fromisoformat(ts.replace("Z", "+00:00"))  # noqa: FURB162 - preserve rejection of malformed Z separators
         return parsed if parsed.tzinfo is not None else None
-    except Exception:
+    except (AttributeError, TypeError, ValueError, OverflowError):
         return None
 
 
@@ -140,9 +140,7 @@ def _task_class(entry: dict) -> str:
     if any(part.startswith("tests/") for part in files) or ".test." in haystack:
         return "tests"
     if files and all(
-        part.startswith("docs/")
-        or part.endswith(".md")
-        or part.startswith(".taskmaster/")
+        part.startswith(("docs/", ".taskmaster/")) or part.endswith(".md")
         for part in files
     ):
         return "docs"
@@ -167,7 +165,7 @@ def filter_entries(
     elif since is not None:
         try:
             cutoff = datetime.fromisoformat(since).replace(tzinfo=UTC)
-        except Exception:
+        except (TypeError, ValueError, OverflowError):
             pass
 
     if cutoff is not None:

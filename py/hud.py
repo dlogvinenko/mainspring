@@ -35,7 +35,7 @@ def _parse_timestamp(entry: dict, target_tz: tzinfo | None = None) -> datetime |
     if not value:
         return None
     try:
-        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))  # noqa: FURB162 - preserve rejection of malformed Z separators
     except ValueError:
         return None
     return parsed.astimezone(target_tz)
@@ -62,7 +62,7 @@ def _parse_since(value: str, now: datetime) -> datetime | None:
             return now - timedelta(hours=count)
         return now - timedelta(days=count)
     try:
-        return datetime.fromisoformat(text.replace("Z", "+00:00")).astimezone(
+        return datetime.fromisoformat(text.replace("Z", "+00:00")).astimezone(  # noqa: FURB162 - preserve rejection of malformed Z separators
             now.tzinfo
         )
     except ValueError as exc:
@@ -540,7 +540,7 @@ def _pid_command(pid: int | None) -> str:
             stderr=subprocess.DEVNULL,
             timeout=1.0,
         ).strip()
-    except Exception:
+    except (OSError, subprocess.SubprocessError, UnicodeError):
         return ""
 
 
@@ -918,7 +918,7 @@ def _read_process_rows() -> list[str]:
             text=True,
             stderr=subprocess.DEVNULL,
         )
-    except Exception:
+    except (OSError, subprocess.SubprocessError, UnicodeError):
         return []
     return output.splitlines()
 
@@ -941,7 +941,7 @@ def _pid_cwd(pid: int) -> Path | None:
             stderr=subprocess.DEVNULL,
             timeout=1.0,
         )
-    except Exception:
+    except (OSError, subprocess.SubprocessError, UnicodeError):
         return None
     for line in output.splitlines():
         if line.startswith("n"):
@@ -1525,7 +1525,7 @@ def _human_time(value: object) -> str:
     if not text:
         return "-"
     try:
-        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))  # noqa: FURB162 - preserve rejection of malformed Z separators
     except ValueError:
         return text
     if parsed.tzinfo is None:

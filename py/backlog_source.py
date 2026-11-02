@@ -6,9 +6,10 @@ from __future__ import annotations
 import json
 import re
 import subprocess
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Protocol, Sequence
+from typing import Protocol
 
 ACTIONABLE_STATUSES = {"pending", "in-progress", "review"}
 
