@@ -157,7 +157,7 @@ def test_prd_points_to_refreshed_competitive_analysis() -> None:
     assert "Competitor landscape / competitive positioning (June 2026 refresh)" in prd
     assert "[`docs/competitive-analysis.md`](competitive-analysis.md)" in prd
     assert "**Snapshot date:** 2026-06-14" in prd
-    assert "_Last edited: 2026-10-30." in prd
+    assert "_Last edited: 2026-11-02." in prd
     assert "release-" + "status box" not in prd
     assert "no unsupported release-management CLI commands" in prd
     assert "publication-only helper commands" not in prd
