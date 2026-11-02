@@ -9,7 +9,8 @@ task_allows_docs_only() {
   local target_id="$1"
   local meta
   meta="$(task_metadata_for_id "$target_id")"
-  if printf '%s' "$meta" | rg -qi "$(docs_only_task_pattern)"; then
+  # Match ASCII markers even when captured metadata contains undecodable bytes.
+  if LC_ALL=C grep -Eqi "$(docs_only_task_pattern)" <<< "$meta"; then
     return 0
   fi
   return 1
@@ -96,15 +97,16 @@ print_wave_scope_files() {
 classify_ci_failure_reason() {
   local display_file="$1"
   [ -f "$display_file" ] || return 1
-  if rg -qi '(CI_FAIL_REASON|FAIL_REASON_CATEGORY):[[:space:]]*type(check)?[-_ ]fail|npm run typecheck|tsc .*error TS|Typecheck failed|typecheck failed' "$display_file"; then
+  # Compiler output is raw bytes, not guaranteed UTF-8 in the caller's locale.
+  if LC_ALL=C grep -Eqi '(CI_FAIL_REASON|FAIL_REASON_CATEGORY):[[:space:]]*type(check)?[-_ ]fail|npm run typecheck|tsc .*error TS|Typecheck failed|typecheck failed' "$display_file"; then
     echo "typecheck_fail"
     return 0
   fi
-  if rg -qi '(CI_FAIL_REASON|FAIL_REASON_CATEGORY):[[:space:]]*lint[-_ ]fail|npm run lint|eslint .*error|Lint failed|lint failed' "$display_file"; then
+  if LC_ALL=C grep -Eqi '(CI_FAIL_REASON|FAIL_REASON_CATEGORY):[[:space:]]*lint[-_ ]fail|npm run lint|eslint .*error|Lint failed|lint failed' "$display_file"; then
     echo "lint_fail"
     return 0
   fi
-  if rg -qi '(CI_FAIL_REASON|FAIL_REASON_CATEGORY):[[:space:]]*test[-_ ]fail|npx vitest run|npm test|Tests? failed|test failed|vitest.*failed' "$display_file"; then
+  if LC_ALL=C grep -Eqi '(CI_FAIL_REASON|FAIL_REASON_CATEGORY):[[:space:]]*test[-_ ]fail|npx vitest run|npm test|Tests? failed|test failed|vitest.*failed' "$display_file"; then
     echo "test_fail"
     return 0
   fi

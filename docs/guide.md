@@ -350,6 +350,9 @@ encoding, structured-data and system-process failures. Other exception types
 propagate instead of masquerading as missing metadata. Third-party completion
 and cost callbacks retain separate failure handling because provider exception
 classes are open-ended; a failed completion still exits nonzero.
+Wave CI-reason and docs-only matching use grep extended regular expressions in a
+per-command C locale, retaining ASCII markers beside undecodable raw log bytes.
+No ripgrep is required; category priority, retry limits and caller locale remain unchanged.
 
 The limits report retains source labels as provenance. A label such as
 `codex_sessions`, without other data, leaves a runnable adapter as

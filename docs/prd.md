@@ -72,12 +72,18 @@ The ten commandments. Anything below this line bows to them. If a phase plan, a 
 
 ### Local candidate validation, 2026-11-02
 
-`make all`, package smoke and the coverage gate pass locally. Normal and traced
-Python runs each pass 2101 tests with 1 skipped; all 234 Bats pass. Ruff check and
-format, shell syntax/shellcheck, HUD, docs-site and dependency audit pass.
-Measured helper coverage is 92.9% (11450/12326 executable lines), above the unchanged
-80% threshold. Wheel and sdist smoke checks pass. Live provider/account access and
-global installation are outside this local validation.
+The complete local `make all`, package-smoke and coverage sequence passed before
+the portable wave-matching follow-up: normal and traced Python each passed 2101
+tests with 1 skipped, and all 234 Bats passed. Ruff check/format, shell lint, HUD,
+docs-site, dependency audit and wheel/sdist smoke passed. Measured helper coverage
+was 92.9% (11450/12326 executable lines), above the unchanged 80% threshold.
+
+After the matching repair, a separate full shell-lint/Bats gate passes all 238
+cases. CI-reason and docs-only matching use byte-stable grep rather than an undeclared
+ripgrep dependency. Owned tool-only controls retain attribution, retries and public
+dry-run behavior without a model or notifier call. Python runtime is unchanged;
+hosted CI is checked separately at each published revision. Live provider/account
+access and global installation are outside these local checks.
 
 ### Historical validation, 2026-10-30
 

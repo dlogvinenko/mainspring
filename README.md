@@ -199,8 +199,8 @@ Registered engine keys: `claude`, `codex`, `anthropic`, `openai`, `azure`,
 | Ollama | LiteLLM provider | Local Ollama service. |
 | LiteLLM | Generic bridge | Provider-specific model string and credentials. |
 
-Engine paths fail closed and never silently fall back to another provider, model or reviewer. Quota failure needs engine error/rejection evidence, not task prose.
-Malformed quota data stays unknown. Known data/process failures retain fallbacks; other exception types propagate. Provider callbacks and traced children keep failure boundaries.
+Engine paths fail closed and never silently fall back to another provider, model or reviewer. Quota failures need error/rejection evidence, not task prose.
+Malformed quota data stays unknown. Known data/process failures retain fallbacks. Provider/child boundaries remain; wave matching uses byte-stable grep, without requiring ripgrep.
 
 Use `mainspring engines` for setup gaps and `mainspring limits` before long work: `ready` needs a runnable adapter plus local data.
 A source label alone leaves `adapter-only`; credentials or quota remain unproved by that offline snapshot.
